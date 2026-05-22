@@ -594,11 +594,11 @@ body {
       <h2>Iniciar sesión</h2>
       <div class="form-group">
         <label>Usuario</label>
-        <input type="text" id="login-user" value="DANI.MENA.SALIN" placeholder="Ingresa tu usuario">
+        <input type="text" id="login-user" placeholder="Ingresa tu usuario">
       </div>
       <div class="form-group">
         <label>Contraseña</label>
-        <input type="password" id="login-pass" value="1234" placeholder="Ingresa tu contraseña">
+        <input type="password" id="login-pass" placeholder="Ingresa tu contraseña">
       </div>
       <button class="btn-primary" onclick="doLogin()">Ingresar</button>
       <div class="login-forgot">¿Olvidaste tu contraseña?</div>
@@ -671,6 +671,9 @@ body {
 
     <!-- DIARIA -->
     <div class="page active" id="page-diaria">
+      <div style="display:flex;justify-content:flex-end;padding:12px 16px 0;">
+        <button class="btn-sm" onclick="showModal('nueva-cita')" style="background:var(--dark);color:var(--white);border:none;padding:8px 16px;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;">+ Nueva cita</button>
+      </div>
       <table class="agenda-table">
         <thead>
           <tr>
@@ -1376,12 +1379,21 @@ function nextMonth() { calDate.setMonth(calDate.getMonth()+1); renderCalendar();
 async function selectCalDate(dateStr) {
   agendaFecha = dateStr;
   const d = new Date(dateStr + 'T12:00:00');
-  const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const days = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
   const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   document.getElementById('day-num').textContent = d.getDate();
   document.getElementById('day-name').textContent = days[d.getDay()].toUpperCase();
+  if(document.getElementById('month-year')) document.getElementById('month-year').textContent = months[d.getMonth()] + ' ' + d.getFullYear();
+  document.getElementById('cal-popup').classList.remove('open');
+  // Navegar a agenda diaria
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.navtab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-diaria').classList.add('active');
+  document.querySelector('.navtab').classList.add('active');
+  document.getElementById('sidebar').className = 'sidebar visible';
   renderCalendar();
   await cargarCitas();
+  showToast('Agenda ' + d.getDate() + ' de ' + months[d.getMonth()]);
 }
 
 // ============================================================
@@ -1834,8 +1846,9 @@ function closeModalOnBg(e) { if(e.target===document.getElementById('modal-backdr
 // ============================================================
 // CALENDARIO TOGGLE
 function toggleCal() {
-  const sidebar = document.getElementById('sidebar');
-  sidebar.classList.toggle('visible');
+  const popup = document.getElementById('cal-popup');
+  popup.classList.toggle('open');
+  if(popup.classList.contains('open')) renderCalendar();
 }
 
 // TOAST
