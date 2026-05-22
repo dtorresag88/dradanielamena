@@ -1379,21 +1379,72 @@ function openFicha(rut) {
   showPage('ficha', null);
   document.querySelectorAll('.navtab').forEach(t => t.classList.remove('active'));
   document.getElementById('sidebar').classList.remove('visible');
+
+  // Actualizar header de la ficha con datos del paciente
+  const pac = pacientes.find(p => p.rut === currentPacienteRut);
+  if(pac) {
+    // Avatar: iniciales
+    const initials = pac.nombre.split(' ').slice(0,2).map(w=>w[0]).join('');
+    const avatarEl = document.getElementById('ficha-avatar');
+    const nameEl = document.getElementById('ficha-name');
+    const metaEl = document.getElementById('ficha-meta');
+    if(avatarEl) avatarEl.textContent = initials;
+    if(nameEl) nameEl.textContent = pac.nombre;
+    if(metaEl) metaEl.innerHTML = `RUT: ${pac.rut} &nbsp;|&nbsp; N° Ficha: ${pac.ficha} &nbsp;|&nbsp; ${pac.edad || '—'} años`;
+
+    // Alerta médica
+    const alertaBox = document.getElementById('ficha-alerta-box');
+    const alertaTexto = document.getElementById('ficha-alerta-texto');
+    if(alertaBox && alertaTexto) {
+      if(pac.alerta_medica) {
+        alertaBox.style.display = '';
+        alertaTexto.textContent = pac.alerta_medica;
+      } else {
+        alertaBox.style.display = 'none';
+      }
+    }
+
+    // Info tab: actualizar datos personales
+    const infoNombres = pac.nombre.split(' ');
+    const nombres = infoNombres.slice(0, Math.ceil(infoNombres.length/2)).join(' ');
+    const apellidos = infoNombres.slice(Math.ceil(infoNombres.length/2)).join(' ');
+    const infoTab = document.getElementById('ftab-info');
+    if(infoTab) {
+      infoTab.querySelectorAll('.info-bloque').forEach((bloque, bi) => {
+        if(bi === 0) {
+          // Datos paciente
+          const fields = bloque.querySelectorAll('.info-field span');
+          if(fields[0]) fields[0].textContent = nombres;
+          if(fields[1]) fields[1].textContent = apellidos;
+          if(fields[3]) fields[3].textContent = pac.edad ? pac.edad + ' años' : '—';
+          if(fields[4]) fields[4].textContent = pac.fono || '—';
+          if(fields[5]) { fields[5].textContent = pac.email || '—'; fields[5].style.color = pac.email ? 'var(--blue)' : ''; }
+        } else if(bi === 1) {
+          // Apoderado 1
+          const fields = bloque.querySelectorAll('.info-field span');
+          if(fields[0]) fields[0].textContent = pac.apoderado1_nombre || '—';
+          if(fields[1]) fields[1].textContent = pac.apoderado1_fono || '—';
+          if(fields[2]) { fields[2].textContent = pac.apoderado1_email || '—'; fields[2].style.color = pac.apoderado1_email ? 'var(--blue)' : ''; }
+        } else if(bi === 2) {
+          // Apoderado 2
+          const fields = bloque.querySelectorAll('.info-field span');
+          if(fields[0]) fields[0].textContent = pac.apoderado2_nombre || '—';
+          if(fields[1]) fields[1].textContent = pac.apoderado2_fono || '—';
+          if(fields[2]) { fields[2].textContent = pac.apoderado2_email || '—'; fields[2].style.color = pac.apoderado2_email ? 'var(--blue)' : ''; }
+        }
+      });
+      // Convenio y comentarios
+      const convBox = infoTab.querySelector('.conv-box span');
+      if(convBox) convBox.textContent = pac.convenio || '—';
+      const commentBoxes = infoTab.querySelectorAll('.comment-box span');
+      if(commentBoxes[0]) commentBoxes[0].textContent = pac.referencias || '—';
+      if(commentBoxes[1]) commentBoxes[1].textContent = pac.comentarios || '—';
+    }
+  }
+
   cargarEvoluciones();
   cargarAnamnesis();
   cargarPresupuestos();
-  // Actualizar alerta médica en la ficha
-  const pac = pacientes.find(p => p.rut === currentPacienteRut);
-  const alertaBox = document.getElementById('ficha-alerta-box');
-  const alertaTexto = document.getElementById('ficha-alerta-texto');
-  if(alertaBox && alertaTexto) {
-    if(pac && pac.alerta_medica) {
-      alertaBox.style.display = '';
-      alertaTexto.textContent = pac.alerta_medica;
-    } else {
-      alertaBox.style.display = 'none';
-    }
-  }
 }
 function showFichaTab(id, el) {
   document.querySelectorAll('.ficha-section').forEach(s => s.classList.remove('active'));
