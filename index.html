@@ -1080,11 +1080,8 @@ body {
             </div>
           </div>
           <table class="presup-table">
-            <thead><tr><th>N° Folio</th><th>Fecha creación</th><th>Tipo</th><th>Monto</th><th>Acciones</th></tr></thead>
-            <tbody>
-              <tr class="row-blue"><td>87483</td><td>23/04/2025</td><td>Ortodoncia</td><td>$900.500</td><td class="presup-actions"><button class="btn-xs" onclick="showModal('ver-presup')">Visualizar</button><button class="btn-xs" onclick="showToast('Presupuesto marcado como realizado')">Marcar realizado</button></td></tr>
-              <tr class="row-yellow"><td>3729</td><td>23/03/2026</td><td>Operatoria</td><td>$100.000</td><td class="presup-actions"><button class="btn-xs" onclick="showModal('ver-presup')">Visualizar</button><button class="btn-xs" onclick="showToast('Presupuesto marcado como realizado')">Marcar realizado</button></td></tr>
-            </tbody>
+            <thead><tr><th>N° Folio</th><th>Fecha creación</th><th>Tipo</th><th>Monto</th><th>Archivo</th><th>Acciones</th></tr></thead>
+            <tbody id="presup-body"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Cargando...</td></tr></tbody>
           </table>
         </div>
 
@@ -1358,6 +1355,7 @@ function openFicha(rut) {
   document.getElementById('sidebar').classList.remove('visible');
   cargarEvoluciones();
   cargarAnamnesis();
+  cargarPresupuestos();
 }
 function showFichaTab(id, el) {
   document.querySelectorAll('.ficha-section').forEach(s => s.classList.remove('active'));
@@ -2253,15 +2251,23 @@ const modalTemplates = {
   'nuevo-presup': () => `
     <h3>Nuevo presupuesto</h3>
     <div class="modal-field"><label>Convenio</label>
-      <select><option>Sin convenio</option><option>Fonasa</option><option>SmileUp</option></select>
+      <select id="np-convenio"><option>Sin convenio</option><option>Fonasa</option><option>SmileUp</option><option>Cruz Blanca</option></select>
     </div>
     <div class="modal-field"><label>Tipo de tratamiento</label>
-      <select><option>Ortodoncia</option><option>Operatoria</option><option>Periodoncia</option><option>Cirugía</option><option>Otro</option></select>
+      <select id="np-tipo"><option>Ortodoncia</option><option>Operatoria</option><option>Periodoncia</option><option>Cirugía</option><option>Otro</option></select>
     </div>
-    <div class="modal-field"><label>Descripción</label><textarea placeholder="Detalle de prestaciones..."></textarea></div>
-    <div class="modal-field"><label>Monto total</label><input type="text" placeholder="$0"></div>
-    <div class="modal-field"><label>N° cuotas</label><input type="number" placeholder="1" min="1"></div>
-    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button><button class="btn-primary" onclick="closeModal();showToast('Presupuesto creado')">Crear presupuesto</button></div>`,
+    <div class="modal-field"><label>Descripción</label><textarea id="np-desc" placeholder="Detalle de prestaciones..."></textarea></div>
+    <div class="modal-field"><label>Monto total</label><input id="np-monto" type="text" placeholder="$0"></div>
+    <div class="modal-field"><label>N° cuotas</label><input id="np-cuotas" type="number" placeholder="1" min="1" value="1"></div>
+    <div class="modal-field">
+      <label>Documento anexo <span style="font-size:11px;color:var(--muted);font-weight:400;">(PDF, Word, imagen — opcional)</span></label>
+      <input id="np-archivo" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="padding:8px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);width:100%;font-size:13px;cursor:pointer;">
+      <div id="np-archivo-preview" style="margin-top:6px;font-size:12px;color:var(--muted);"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" id="np-btn-crear" onclick="guardarNuevoPresupuesto()">Crear presupuesto</button>
+    </div>`,
 
   'ver-presup': () => `
     <h3>Presupuesto N° 87483 — Ortodoncia</h3>
@@ -2365,11 +2371,131 @@ function showModal(id) {
   document.getElementById('modal-content').innerHTML = tpl();
   document.getElementById('modal-backdrop').classList.add('open');
 }
-function closeModal() { document.getElementById('modal-backdrop').classList.remove('open'); }
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+}
+
+// Preview nombre archivo en input file
+document.addEventListener('change', function(e) {
+  if(e.target && e.target.id === 'np-archivo') {
+    const preview = document.getElementById('np-archivo-preview');
+    if(preview && e.target.files[0]) {
+      preview.innerHTML = `✓ Archivo seleccionado: <strong>${e.target.files[0].name}</strong> (${(e.target.files[0].size/1024).toFixed(0)} KB)`;
+      preview.style.color = 'var(--green)';
+    }
+  }
+});
 function closeModalOnBg(e) { if(e.target===document.getElementById('modal-backdrop')) closeModal(); }
 
 // ============================================================
 // CALENDARIO TOGGLE
+// ── PRESUPUESTOS ────────────────────────────────────────────────────────────
+let presupuestosData = [];
+
+async function cargarPresupuestos() {
+  const { data, error } = await sb.from('presupuestos').select('*')
+    .eq('paciente_rut', currentPacienteRut).order('created_at', {ascending:false});
+  if(error) { console.error('Error presupuestos:', error); return; }
+  presupuestosData = data || [];
+  renderPresupuestos();
+}
+
+function renderPresupuestos() {
+  const tbody = document.getElementById('presup-body');
+  if(!tbody) return;
+  const estadoColor = {'Sin iniciar':'row-blue','En tratamiento':'row-green','Terminado':'row-yellow','Expirado':'row-gray'};
+  tbody.innerHTML = presupuestosData.length ? presupuestosData.map(p => {
+    const fechaFmt = p.fecha ? p.fecha.split('-').reverse().join('/') : '';
+    const archivoBtn = p.archivo_url
+      ? `<a href="${p.archivo_url}" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none;">📎 ${p.archivo_nombre || 'Ver archivo'}</a>`
+      : `<span style="font-size:11px;color:var(--muted);">—</span>`;
+    return `<tr class="${estadoColor[p.estado]||'row-blue'}">
+      <td>${p.folio||'—'}</td>
+      <td>${fechaFmt}</td>
+      <td>${p.tipo||''}</td>
+      <td>$${(p.monto||0).toLocaleString('es-CL')}</td>
+      <td>${archivoBtn}</td>
+      <td class="presup-actions">
+        <button class="btn-xs" onclick="verPresupuesto(${p.id})">Visualizar</button>
+        <button class="btn-xs" onclick="cambiarEstadoPresup(${p.id},'Terminado')">Marcar realizado</button>
+      </td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);">Sin presupuestos registrados</td></tr>';
+}
+
+async function guardarNuevoPresupuesto() {
+  const btn = document.getElementById('np-btn-crear');
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+  const archivoInput = document.getElementById('np-archivo');
+  const archivo = archivoInput?.files?.[0];
+  let archivoUrl = null, archivoNombre = null;
+
+  // Subir archivo si existe
+  if(archivo) {
+    const ext = archivo.name.split('.').pop();
+    const path = `${currentPacienteRut}/${Date.now()}.${ext}`;
+    const { data: upData, error: upErr } = await sb.storage.from('presupuestos').upload(path, archivo);
+    if(upErr) { showToast('Error al subir archivo'); btn.textContent='Crear presupuesto'; btn.disabled=false; return; }
+    const { data: urlData } = sb.storage.from('presupuestos').getPublicUrl(path);
+    archivoUrl = urlData.publicUrl;
+    archivoNombre = archivo.name;
+  }
+
+  // Generar folio
+  const folio = String(Math.floor(Math.random()*90000)+10000);
+  const obj = {
+    paciente_rut: currentPacienteRut,
+    folio,
+    convenio: document.getElementById('np-convenio').value,
+    tipo: document.getElementById('np-tipo').value,
+    descripcion: document.getElementById('np-desc').value.trim(),
+    monto: parseInt((document.getElementById('np-monto').value||'0').replace(/\D/g,''))||0,
+    cuotas: parseInt(document.getElementById('np-cuotas').value)||1,
+    estado: 'Sin iniciar',
+    archivo_url: archivoUrl,
+    archivo_nombre: archivoNombre,
+  };
+  const { error } = await sb.from('presupuestos').insert(obj);
+  if(error) { showToast('Error al guardar presupuesto'); btn.textContent='Crear presupuesto'; btn.disabled=false; return; }
+  await cargarPresupuestos();
+  closeModal();
+  showToast('Presupuesto creado correctamente');
+}
+
+async function cambiarEstadoPresup(id, estado) {
+  await sb.from('presupuestos').update({estado}).eq('id', id);
+  await cargarPresupuestos();
+  showToast('Estado actualizado');
+}
+
+async function verPresupuesto(id) {
+  const p = presupuestosData.find(x => x.id === id);
+  if(!p) return;
+  const fechaFmt = p.fecha ? p.fecha.split('-').reverse().join('/') : '';
+  const archivoSection = p.archivo_url
+    ? `<div style="margin-top:16px;padding:12px;background:var(--blue-light);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:13px;">📎 ${p.archivo_nombre||'Archivo adjunto'}</span>
+        <a href="${p.archivo_url}" target="_blank" class="btn-xs" style="color:var(--blue);border-color:var(--blue);text-decoration:none;">Descargar</a>
+      </div>` : '';
+  document.getElementById('modal-content').innerHTML = `
+    <h3>Presupuesto N° ${p.folio} — ${p.tipo}</h3>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Creado: ${fechaFmt} &nbsp;|&nbsp; Estado: ${p.estado} &nbsp;|&nbsp; Convenio: ${p.convenio}</div>
+    ${p.descripcion ? `<div style="font-size:13px;margin-bottom:12px;padding:12px;background:var(--cream);border-radius:var(--radius-sm);">${p.descripcion}</div>` : ''}
+    <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;padding:12px 0;border-top:1px solid var(--border);">
+      <span>Monto total</span><span>$${(p.monto||0).toLocaleString('es-CL')}</span>
+    </div>
+    <div style="font-size:13px;color:var(--muted);">Cuotas: ${p.cuotas||1}</div>
+    ${archivoSection}
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="btn-cancel" style="color:var(--red);border-color:var(--red);" onclick="cambiarEstadoPresup(${p.id},'Expirado');closeModal()">Marcar expirado</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-cancel" onclick="closeModal()">Cerrar</button>
+        <button class="btn-primary" onclick="cambiarEstadoPresup(${p.id},'Terminado');closeModal()">Marcar realizado</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
 function editarNombreClinica() {
   document.getElementById('modal-content').innerHTML = `
     <h3>Nombre de la clínica</h3>
