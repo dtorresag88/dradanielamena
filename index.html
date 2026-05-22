@@ -203,6 +203,23 @@ body {
 .page.active { display: block; }
 
 /* AGENDA DIARIA */
+
+/* AGENDA GRID */
+.agenda-grid-wrap { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.agenda-slot { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); min-height: 36px; }
+.agenda-slot:last-child { border-bottom: none; }
+.slot-time { width: 60px; min-width: 60px; font-size: 11px; color: var(--muted); padding: 0 12px; display: flex; align-items: center; border-right: 1px solid var(--border); background: #fafaf8; }
+.slot-block { flex: 1; padding: 4px 12px; cursor: pointer; display: flex; align-items: center; transition: background .1s; }
+.slot-block:hover { background: var(--accent-light); }
+.slot-block.ocupado { background: var(--cream); cursor: default; pointer-events: none; }
+.slot-block.ocupado:hover { background: var(--cream); }
+.slot-appt { display: flex; align-items: center; gap: 10px; width: 100%; }
+.slot-appt-name { font-size: 13px; font-weight: 500; color: var(--dark); }
+.slot-appt-tipo { font-size: 11px; color: var(--muted); }
+.slot-appt-badge { margin-left: auto; }
+.slot-libre { font-size: 12px; color: var(--border); }
+.slot-block.libre:hover .slot-libre { color: var(--accent); }
+
 .agenda-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
 .agenda-table thead th {
   padding: 12px 16px; background: var(--cream); font-size: 11px; font-weight: 600;
@@ -671,27 +688,16 @@ body {
 
     <!-- DIARIA -->
     <div class="page active" id="page-diaria">
-      <div style="display:flex;justify-content:flex-end;padding:12px 16px 0;">
-        <button class="btn-sm" onclick="showModal('nueva-cita')" style="background:var(--dark);color:var(--white);border:none;padding:8px 16px;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;">+ Nueva cita</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px 0;">
+        <div style="font-size:12px;color:var(--muted);">Haz clic en un bloque libre para agendar</div>
+        <button class="btn-sm" onclick="abrirNuevaCita(null)" style="background:var(--dark);color:var(--white);border:none;padding:8px 16px;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;">+ Nueva cita</button>
       </div>
-      <table class="agenda-table">
-        <thead>
-          <tr>
-            <th>Hora</th>
-            <th>Paciente</th>
-            <th>Estado de la cita</th>
-            <th>Tipo de atención</th>
-            <th>Próxima cita</th>
-          </tr>
-        </thead>
-        <tbody id="agenda-body"></tbody>
-      </table>
+      <div id="agenda-grid" style="padding:12px 16px;"></div>
       <div class="detail-panel" id="detail-panel">
         <h3>Descripción de la cita</h3>
         <div id="detail-content"></div>
         <div class="detail-actions">
           <button class="btn-action btn-outline" onclick="closeDetail()">Cerrar</button>
-          <button class="btn-action btn-outline" onclick="showModal('edit-cita')">✏️ Editar cita</button>
           <button class="btn-action btn-dark" onclick="openFicha()">👤 Abrir ficha pcte</button>
         </div>
       </div>
@@ -1230,22 +1236,72 @@ async function cargarCitas() {
 }
 
 function renderAgenda() {
-  const tbody = document.getElementById('agenda-body');
-  tbody.innerHTML = citas.map((c, i) => {
-    if(c.bloqueado) {
-      return `<tr class="bloqueado-row" onclick="selectCita(${i})">
-        <td class="hora-col">${c.hora ? c.hora.slice(0,5) : ''}</td>
-        <td colspan="4" style="color:var(--muted);font-style:italic;">${c.obs || 'Bloqueado'}</td>
-      </tr>`;
+  const grid = document.getElementById('agenda-grid');
+  if(!grid) return;
+
+  // Generar bloques de 07:00 a 20:00 cada 15 min
+  const slots = [];
+  for(let h = 7; h < 20; h++) {
+    for(let m = 0; m < 60; m += 15) {
+      slots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
     }
-    return `<tr onclick="selectCita(${i})">
-      <td class="hora-col">${c.hora ? c.hora.slice(0,5) : ''}</td>
-      <td class="paciente-col">${c.paciente || ''}</td>
-      <td><span class="badge ${estadoClass[c.estado] || 'badge-agendado'}">${c.estado || ''}</span></td>
-      <td class="tipo-col">${c.tipo || ''}</td>
-      <td class="proxima-col">${c.proxima || '—'}</td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Sin citas para este día</td></tr>';
+  }
+
+  // Mapear citas por hora
+  const citaMap = {};
+  citas.forEach((c, i) => {
+    if(c.hora) {
+      const horaKey = c.hora.slice(0,5);
+      citaMap[horaKey] = {cita: c, idx: i};
+    }
+  });
+
+  let html = '<div class="agenda-grid-wrap">';
+  let skipUntil = null;
+
+  slots.forEach(slot => {
+    if(skipUntil && slot < skipUntil) {
+      return; // slot ocupado por cita larga
+    }
+    skipUntil = null;
+
+    const entry = citaMap[slot];
+    if(entry) {
+      const c = entry.cita;
+      const idx = entry.idx;
+      if(c.bloqueado) {
+        html += `<div class="agenda-slot">
+          <div class="slot-time">${slot}</div>
+          <div class="slot-block ocupado" style="background:#f5f4f0;">
+            <span style="font-size:12px;color:var(--muted);font-style:italic;">🔒 ${c.obs || 'Bloqueado'}</span>
+          </div>
+        </div>`;
+      } else {
+        html += `<div class="agenda-slot">
+          <div class="slot-time">${slot}</div>
+          <div class="slot-block ocupado" onclick="selectCita(${idx})" style="cursor:pointer;pointer-events:all;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+            <div class="slot-appt">
+              <div>
+                <div class="slot-appt-name">${c.paciente || ''}</div>
+                <div class="slot-appt-tipo">${c.tipo || ''}</div>
+              </div>
+              <div class="slot-appt-badge"><span class="badge ${estadoClass[c.estado] || 'badge-agendado'}">${c.estado || ''}</span></div>
+            </div>
+          </div>
+        </div>`;
+      }
+    } else {
+      html += `<div class="agenda-slot">
+        <div class="slot-time">${slot}</div>
+        <div class="slot-block libre" onclick="abrirNuevaCita('${slot}')">
+          <span class="slot-libre">+ Agendar</span>
+        </div>
+      </div>`;
+    }
+  });
+
+  html += '</div>';
+  grid.innerHTML = html;
 }
 
 function selectCita(i) {
@@ -1310,6 +1366,86 @@ async function eliminarCita(id) {
   closeModal();
   closeDetail();
   showToast('Cita eliminada');
+}
+
+function abrirNuevaCita(hora) {
+  // Construir modal con hora pre-llenada y autocompletar paciente
+  const horaVal = hora || '';
+  document.getElementById('modal-content').innerHTML = `
+    <h3>Nueva cita${hora ? ' — ' + hora + ' hrs' : ''}</h3>
+    <div class="modal-field"><label>Hora</label><input name="hora" type="time" value="${horaVal}" required></div>
+    <div class="modal-field"><label>Duración</label>
+      <select name="duracion" id="nueva-duracion">
+        <option value="15">15 minutos (1 bloque)</option>
+        <option value="30" selected>30 minutos (2 bloques)</option>
+        <option value="45">45 minutos (3 bloques)</option>
+        <option value="60">1 hora (4 bloques)</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Paciente</label>
+      <input name="paciente" id="nueva-paciente" type="text" placeholder="Nombre o RUT..." autocomplete="off" oninput="buscarPacienteModal(this.value)">
+      <div id="pac-suggestions" style="position:absolute;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);max-height:160px;overflow-y:auto;z-index:999;width:calc(100% - 2px);display:none;box-shadow:var(--shadow);"></div>
+    </div>
+    <div class="modal-field"><label>RUT</label><input name="rut" id="nueva-rut" type="text" placeholder="12.345.678-9"></div>
+    <div class="modal-field"><label>N° Ficha</label><input name="ficha" id="nueva-ficha" type="text"></div>
+    <div class="modal-field"><label>Fono</label><input name="fono" id="nueva-fono" type="text"></div>
+    <div class="modal-field"><label>Email</label><input name="email" id="nueva-email" type="email"></div>
+    <div class="modal-field"><label>Tipo de atención</label>
+      <select name="tipo"><option>Evaluación</option><option>Estudio</option><option>Inicio</option><option>Control</option><option>Retiro</option><option>Control post-retiro</option><option>Urgencia</option></select>
+    </div>
+    <div class="modal-field"><label>Estado</label>
+      <select name="estado"><option>Agendado</option><option>Confirmado vía mail</option><option>Reconfirmado vía WhatsApp</option></select>
+    </div>
+    <div class="modal-field"><label>Próxima cita</label><input name="proxima" type="text" placeholder="Ej: 05 Junio"></div>
+    <div class="modal-field"><label>Observaciones</label><textarea name="obs"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarCitaDesdeModal()">Agendar</button>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function buscarPacienteModal(q) {
+  const sugg = document.getElementById('pac-suggestions');
+  if(!q || q.length < 2) { sugg.style.display = 'none'; return; }
+  const matches = pacientes.filter(p =>
+    p.nombre.toLowerCase().includes(q.toLowerCase()) || p.rut.includes(q)
+  ).slice(0, 6);
+  if(!matches.length) { sugg.style.display = 'none'; return; }
+  sugg.style.display = 'block';
+  sugg.innerHTML = matches.map(p => `
+    <div onclick="seleccionarPacienteModal(${JSON.stringify(p).replace(/"/g,'&quot;')})"
+      style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);"
+      onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+      <strong>${p.nombre}</strong><br>
+      <span style="font-size:11px;color:var(--muted)">RUT: ${p.rut} | Ficha: ${p.ficha}</span>
+    </div>`).join('');
+}
+
+function seleccionarPacienteModal(p) {
+  document.getElementById('nueva-paciente').value = p.nombre;
+  document.getElementById('nueva-rut').value = p.rut;
+  document.getElementById('nueva-ficha').value = p.ficha;
+  document.getElementById('nueva-fono').value = p.fono || '';
+  document.getElementById('nueva-email').value = p.email || '';
+  document.getElementById('pac-suggestions').style.display = 'none';
+}
+
+async function guardarCitaDesdeModal() {
+  const get = (name) => (document.querySelector(`[name="${name}"]`)?.value || '').trim();
+  const form = {
+    hora: { value: get('hora') },
+    paciente: { value: get('paciente') },
+    rut: { value: get('rut') },
+    ficha: { value: get('ficha') },
+    fono: { value: get('fono') },
+    email: { value: get('email') },
+    tipo: { value: get('tipo') },
+    estado: { value: get('estado') },
+    proxima: { value: get('proxima') },
+    obs: { value: get('obs') },
+  };
+  await guardarNuevaCita(form);
 }
 
 async function guardarNuevaCita(form) {
@@ -1661,7 +1797,8 @@ function renderAnamnesis() {
 // MODALES
 // ============================================================
 const modalTemplates = {
-  'nueva-cita': () => `
+  'nueva-cita': () => { abrirNuevaCita(null); return ''; },
+  '_nueva-cita_old': () => `
     <h3>Nueva cita</h3>
     <div class="modal-field"><label>Hora</label><input name="hora" type="time" required></div>
     <div class="modal-field"><label>Paciente</label><input name="paciente" type="text" placeholder="Nombre completo" list="pac-list">
