@@ -1061,13 +1061,12 @@ body {
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script>
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
-  <script>
+<script>
 // ============================================================
-// CONFIGURACIÓN SUPABASE — Reemplaza con tus credenciales
+// CONFIGURACIÓN SUPABASE
 // ============================================================
-const SUPABASE_URL = 'https://snlnzkisqbnauhxqbqhc.supabase.co/rest/v1/';
+const SUPABASE_URL = 'https://snlnzkisqbnauhxqbqhc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNubG56a2lzcWJuYXVoeHFicWhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjI2NDksImV4cCI6MjA5NTAzODY0OX0.3k-5OnLEXphKKa2mnjbA6RN1mZmJ3NXTm78RvoY5cgU';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
