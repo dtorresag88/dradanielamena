@@ -1832,6 +1832,12 @@ function closeModal() { document.getElementById('modal-backdrop').classList.remo
 function closeModalOnBg(e) { if(e.target===document.getElementById('modal-backdrop')) closeModal(); }
 
 // ============================================================
+// CALENDARIO TOGGLE
+function toggleCal() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.toggle('visible');
+}
+
 // TOAST
 // ============================================================
 function showToast(msg) {
