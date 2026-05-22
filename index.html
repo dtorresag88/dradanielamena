@@ -1312,29 +1312,28 @@ function renderAgenda() {
     }
   }
 
-  // Mapear citas por hora
+  // Mapear citas por hora — array para soportar múltiples citas (sobre cupo)
   const citaMap = {};
   citas.forEach((c, i) => {
     if(c.hora) {
       const horaKey = c.hora.slice(0,5);
-      citaMap[horaKey] = {cita: c, idx: i};
+      if(!citaMap[horaKey]) citaMap[horaKey] = [];
+      citaMap[horaKey].push({cita: c, idx: i});
     }
   });
 
   let html = '<div class="agenda-grid-wrap">';
-  let skipUntil = null;
 
   slots.forEach(slot => {
-    if(skipUntil && slot < skipUntil) {
-      return; // slot ocupado por cita larga
-    }
-    skipUntil = null;
+    const entries = citaMap[slot];
+    if(entries && entries.length > 0) {
+      // Separar bloqueados de normales
+      const bloqueados = entries.filter(e => e.cita.bloqueado);
+      const normales = entries.filter(e => !e.cita.bloqueado);
 
-    const entry = citaMap[slot];
-    if(entry) {
-      const c = entry.cita;
-      const idx = entry.idx;
-      if(c.bloqueado) {
+      if(bloqueados.length > 0 && normales.length === 0) {
+        // Solo bloqueado
+        const c = bloqueados[0].cita;
         html += `<div class="agenda-slot">
           <div class="slot-time">${slot}</div>
           <div class="slot-block ocupado" style="background:#f5f4f0;">
@@ -1342,18 +1341,37 @@ function renderAgenda() {
           </div>
         </div>`;
       } else {
-        html += `<div class="agenda-slot">
-          <div class="slot-time">${slot}</div>
-          <div class="slot-block ocupado${c.sobrecupo ? ' sobrecupo-slot' : ''}" onclick="selectCita(${idx})" style="cursor:pointer;pointer-events:all;" onmouseover="this.style.background='var(--accent-light)'" onmouseout="this.style.background=''">
-            <div class="slot-appt">
-              <div>
-                <div class="slot-appt-name">${c.paciente || ''}${c.sobrecupo ? '<span class="tag-sobrecupo">sobre cupo</span>' : ''}</div>
-                <div class="slot-appt-tipo">${c.tipo || ''}</div>
+        // Una o más citas normales (incluyendo sobre cupos)
+        // Columna de hora solo en la primera fila
+        let firstRow = true;
+        normales.forEach(({cita: c, idx}) => {
+          const timeCell = firstRow
+            ? `<div class="slot-time">${slot}</div>`
+            : `<div class="slot-time" style="border-top:1px dashed var(--border);"></div>`;
+          firstRow = false;
+          html += `<div class="agenda-slot${c.sobrecupo ? '' : ''}" style="${c.sobrecupo ? 'border-left:3px solid #F59E0B;' : ''}">
+            ${timeCell}
+            <div class="slot-block${c.sobrecupo ? ' sobrecupo-slot' : ' ocupado'}" onclick="selectCita(${idx})" style="cursor:pointer;pointer-events:all;${c.sobrecupo ? 'background:#FFFBEB;' : ''}" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+              <div class="slot-appt">
+                <div>
+                  <div class="slot-appt-name">${c.paciente || ''}${c.sobrecupo ? '<span class="tag-sobrecupo">sobre cupo</span>' : ''}</div>
+                  <div class="slot-appt-tipo">${c.tipo || ''}</div>
+                </div>
+                <div class="slot-appt-badge"><span class="badge ${estadoClass[c.estado] || 'badge-agendado'}">${c.estado || ''}</span></div>
               </div>
-              <div class="slot-appt-badge"><span class="badge ${estadoClass[c.estado] || 'badge-agendado'}">${c.estado || ''}</span></div>
             </div>
-          </div>
-        </div>`;
+          </div>`;
+        });
+        // Si hay bloqueado además de citas normales, mostrarlo también
+        if(bloqueados.length > 0) {
+          const c = bloqueados[0].cita;
+          html += `<div class="agenda-slot">
+            <div class="slot-time" style="border-top:1px dashed var(--border);"></div>
+            <div class="slot-block ocupado" style="background:#f5f4f0;">
+              <span style="font-size:12px;color:var(--muted);font-style:italic;">🔒 ${c.obs || 'Bloqueado'}</span>
+            </div>
+          </div>`;
+        }
       }
     } else {
       html += `<div class="agenda-slot">
