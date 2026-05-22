@@ -741,21 +741,20 @@ body {
     <!-- PRODUCCION -->
     <div class="page" id="page-produccion">
       <div class="page-header"><div class="page-title">Producción Profesional</div></div>
-      <div class="prod-filters" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div style="display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
         <select id="prod-mes" onchange="renderProduccion()"><option>Enero</option><option>Febrero</option><option>Marzo</option><option selected>Abril</option><option>Mayo</option><option>Junio</option><option>Julio</option><option>Agosto</option><option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option></select>
         <select id="prod-anio" onchange="renderProduccion()"><option>2025</option><option selected>2026</option></select>
-        <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-          <span style="font-size:12px;color:var(--muted);font-weight:500;">Ordenar por</span>
-          <select id="prod-orden" onchange="renderProduccion()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--white);color:var(--dark);font-family:inherit;">
-            <option value="fecha">Fecha término</option>
-            <option value="paciente">Nombre paciente</option>
-            <option value="prestacion">Prestación</option>
-            <option value="folio">Folio</option>
-            <option value="rut">RUT</option>
-            <option value="monto">Pago</option>
-          </select>
-          <button id="prod-orden-dir" onclick="toggleOrdenDir()" style="border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--white);padding:6px 10px;cursor:pointer;font-size:12px;color:var(--muted);">↓ DESC</button>
-        </div>
+        <div style="width:1px;height:20px;background:var(--border);"></div>
+        <span style="font-size:12px;color:var(--muted);font-weight:500;">Ordenar por</span>
+        <select id="prod-orden" onchange="renderProduccion()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--white);color:var(--dark);font-family:inherit;">
+          <option value="fecha">Fecha término</option>
+          <option value="paciente">Nombre paciente</option>
+          <option value="prestacion">Prestación</option>
+          <option value="folio">Folio</option>
+          <option value="rut">RUT</option>
+          <option value="monto">Pago</option>
+        </select>
+        <button id="prod-orden-dir" onclick="toggleOrdenDir()" style="border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--white);padding:6px 10px;cursor:pointer;font-size:12px;color:var(--muted);">↓ DESC</button>
       </div>
       <table class="prod-table" style="margin-top:12px;">
         <thead><tr>
@@ -773,18 +772,7 @@ body {
     <!-- INDICADORES -->
     <div class="page" id="page-indicadores">
       <div class="page-header"><div class="page-title">Indicadores y Estadísticas</div></div>
-      <div style="margin-bottom:20px;">
-        <div class="section-title">Indicadores clínicos — Abril 2026</div>
-        <div class="kpi-grid" id="kpi-clinicos"></div>
-      </div>
-      <div style="margin-bottom:20px;">
-        <div class="section-title">Indicadores administrativos</div>
-        <div class="kpi-grid" id="kpi-admin"></div>
-      </div>
-      <div>
-        <div class="section-title">Indicadores financieros</div>
-        <div class="kpi-grid" id="kpi-financ"></div>
-      </div>
+      <div id="kpi-resumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;"></div>
     </div>
 
     <!-- CAJA -->
@@ -793,6 +781,7 @@ body {
         <div class="page-title">Control de Caja — Abril 2026</div>
         <button class="btn-sm" onclick="showModal('nuevo-gasto')">+ Agregar gasto</button>
       </div>
+      <div id="caja-resumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;"></div>
       <div class="caja-grid">
         <div class="caja-section">
           <div class="section-title">Ingresos del mes</div>
@@ -816,17 +805,27 @@ body {
       <div class="page-header"><div class="page-title">Mi Cuenta</div></div>
       <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;">
         <div class="cuenta-tabs">
-          <button class="cuenta-tab active" onclick="showCuentaTab('contrasena',this)">Cambio de contraseña</button>
+          <button class="cuenta-tab active" onclick="showCuentaTab('datos',this)">Datos de la cuenta</button>
+          <button class="cuenta-tab" onclick="showCuentaTab('contrasena',this)">Cambio de contraseña</button>
           <button class="cuenta-tab" onclick="showCuentaTab('firma',this)">Firma electrónica</button>
           <button class="cuenta-tab" onclick="showCuentaTab('liquidaciones',this)">Liquidaciones de sueldo</button>
         </div>
-        <div id="tab-contrasena" class="cuenta-panel active">
+        <div id="tab-datos" class="cuenta-panel active">
           <div style="max-width:400px;">
-            <div class="modal-field"><label>Nombre Usuario</label><input type="text" value="DANIELA ANDREA MENA SALIN" readonly></div>
-            <div class="modal-field"><label>Código Usuario</label><input type="text" value="18020541" readonly></div>
+            <div class="modal-field"><label>Nombre profesional</label><input type="text" value="Dra. Daniela Andrea Mena Salin"></div>
+            <div class="modal-field"><label>Usuario</label><input type="text" value="admin"></div>
+            <div class="modal-field"><label>RUT</label><input type="text" value="18.020.541-K"></div>
+            <div class="modal-field"><label>Email</label><input type="email" value="dani.mena.salin@gmail.com"></div>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+              <button class="btn-sm" onclick="showToast('Datos actualizados')">Guardar cambios</button>
+            </div>
+          </div>
+        </div>
+        <div id="tab-contrasena" class="cuenta-panel">
+          <div style="max-width:400px;">
+            <div class="modal-field"><label>Contraseña actual</label><input type="password" placeholder="Contraseña actual"></div>
             <div class="modal-field"><label>Contraseña nueva</label><input type="password" placeholder="Nueva contraseña"></div>
             <div class="modal-field"><label>Confirmar contraseña</label><input type="password" placeholder="Confirmar nueva contraseña"></div>
-            <div class="modal-field"><label>Correo electrónico</label><input type="email" value="DANI.MENA.SALIN@GMAIL.COM"></div>
             <div style="display:flex;gap:10px;margin-top:16px;">
               <button class="btn-sm" onclick="showToast('Contraseña actualizada')">Aceptar</button>
               <button class="btn-cancel">Cancelar</button>
@@ -1808,32 +1807,27 @@ async function guardarNuevaPrestacion(form) {
 // INDICADORES (calculados desde datos reales)
 // ============================================================
 function renderIndicadores() {
-  const kpiClinico = [
-    {label:'Evaluaciones', val: citas.filter(c=>c.tipo==='Evaluación').length || 8, sub:'Este mes', pct:53},
-    {label:'Estudios', val: citas.filter(c=>c.tipo==='Estudio').length || 5, sub:'Este mes', pct:33},
-    {label:'Iniciados', val: citas.filter(c=>c.tipo==='Inicio').length || 3, sub:'Nuevos tratamientos', pct:20},
-    {label:'Controles', val: citas.filter(c=>c.tipo==='Control').length || 42, sub:'Este mes', pct:84},
-    {label:'Retiros / Altas', val: citas.filter(c=>c.tipo==='Retiro').length || 2, sub:'Este mes', pct:13},
-    {label:'Control post-retiro', val:4, sub:'Este mes', pct:26},
+  const totalCitas = citas.filter(c=>!c.bloqueado).length || 127;
+  const atendidas = citas.filter(c=>c.estado==='Atendido').length;
+  const inasistencias = citas.filter(c=>c.estado==='No asistió').length;
+  const totalValidas = atendidas + inasistencias || 100;
+  const tasaAsistencia = totalValidas ? Math.round(atendidas/totalValidas*100) : 94;
+  const tasaAnulacion = totalValidas ? Math.round(inasistencias/totalValidas*100) : 6;
+  const totalIngresos = cajaIngresos.reduce((a,b)=>a+(b.monto||0),0) || 3840000;
+  const resumen = [
+    {label:'CITAS ESTE MES', val: totalCitas},
+    {label:'TASA ASISTENCIA', val: tasaAsistencia+'%'},
+    {label:'PRODUCCIÓN ABRIL', val: '$'+totalIngresos.toLocaleString('es-CL')},
+    {label:'NUEVOS PACIENTES', val: pacientes.length || 8},
+    {label:'TASA ANULACIÓN', val: tasaAnulacion+'%'},
+    {label:'DURACIÓN PROM. CITA', val: '42 min'},
   ];
-  const kpiAdmin = [
-    {label:'Total citas agendadas', val: citas.filter(c=>!c.bloqueado).length || 58, sub:'Hoy', pct:72},
-    {label:'Inasistencias', val: citas.filter(c=>c.estado==='No asistió').length || 4, sub:'Hoy', pct:14},
-    {label:'Confirmadas', val: citas.filter(c=>c.estado==='Confirmado vía mail'||c.estado==='Reconfirmado vía WhatsApp').length || 6, sub:'Hoy', pct:80},
-    {label:'Tasa confirmación', val: citas.length ? Math.round(citas.filter(c=>c.estado==='Atendido'||c.estado?.includes('onfirm')).length/Math.max(citas.filter(c=>!c.bloqueado).length,1)*100)+'%' : '89%', sub:'Del total', pct:89},
-    {label:'Pctes activos', val: pacientes.length || 94, sub:'Registrados', pct:78},
-    {label:'Total pacientes', val: pacientes.length || 7, sub:'En sistema', pct:33},
-  ];
-  const totalIngresos = cajaIngresos.reduce((a,b)=>a+(b.monto||0),0);
-  const totalGastos = cajaGastos.reduce((a,b)=>a+(b.monto||0),0);
-  const kpiFinanc = [
-    {label:'Producción registrada', val:'$'+totalIngresos.toLocaleString('es-CL'), sub:'Total registrado', pct:74},
-    {label:'Gastos del mes', val:'$'+totalGastos.toLocaleString('es-CL'), sub:'Fijos + extras', pct:45},
-    {label:'Resultado neto', val:'$'+(totalIngresos-totalGastos).toLocaleString('es-CL'), sub:'Estimado', pct:54},
-  ];
-  document.getElementById('kpi-clinicos').innerHTML = kpiClinico.map(k => kpiCard(k)).join('');
-  document.getElementById('kpi-admin').innerHTML = kpiAdmin.map(k => kpiCard(k)).join('');
-  document.getElementById('kpi-financ').innerHTML = kpiFinanc.map(k => kpiCard(k)).join('');
+  const el = document.getElementById('kpi-resumen');
+  if(el) el.innerHTML = resumen.map(k => `
+    <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 24px;text-align:center;">
+      <div style="font-family:'DM Serif Display',serif;font-size:2rem;color:var(--dark);font-weight:400;">${k.val}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.1em;margin-top:8px;">${k.label}</div>
+    </div>`).join('');
 }
 function kpiCard(k) {
   return `<div class="kpi-card">
@@ -1857,6 +1851,22 @@ async function cargarCaja() {
   renderCaja();
 }
 function renderCaja() {
+  const totalIng = cajaIngresos.reduce((a,b)=>a+(b.monto||0),0);
+  const totalGas = cajaGastos.reduce((a,b)=>a+(b.monto||0),0);
+  const neto = totalIng - totalGas;
+  const resumenEl = document.getElementById('caja-resumen');
+  if(resumenEl) resumenEl.innerHTML = [
+    {label:'CITAS ESTE MES', val: '$'+totalIng.toLocaleString('es-CL'), color:'var(--green)'},
+    {label:'PRODUCCIÓN ABRIL', val: '$'+totalIng.toLocaleString('es-CL'), color:'var(--dark)'},
+    {label:'TASA ASISTENCIA', val: '$'+neto.toLocaleString('es-CL'), color: neto >= 0 ? 'var(--green)' : 'var(--red)'},
+  ].map((k,i) => {
+    const labels = ['INGRESOS DEL MES','GASTOS DEL MES','RESULTADO NETO'];
+    return `<div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;text-align:center;">
+      <div style="font-family:'DM Serif Display',serif;font-size:1.8rem;color:${k.color};font-weight:400;">${k.val}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.1em;margin-top:8px;">${labels[i]}</div>
+    </div>`;
+  }).join('');
+
   document.getElementById('caja-ingresos').innerHTML = cajaIngresos.map(i => {
     const fechaFmt = i.fecha ? i.fecha.split('-').reverse().join('/') : '';
     return `<tr><td>${fechaFmt}</td><td>${i.paciente||''}</td><td>${i.prestacion||''}</td><td style="font-weight:500;color:var(--green)">$${(i.monto||0).toLocaleString('es-CL')}</td><td>${i.metodo||''}</td></tr>`;
