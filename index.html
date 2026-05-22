@@ -699,8 +699,10 @@ body {
     <div class="page active" id="page-diaria">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px 0;">
         <div style="font-size:12px;color:var(--muted);">Haz clic en un bloque libre para agendar</div>
-        <button class="btn-sm" onclick="abrirNuevaCita(null)" style="background:var(--dark);color:var(--white);border:none;padding:8px 16px;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;">+ Nueva cita</button>
-        <button class="btn-sobrecupo" onclick="abrirSobreCupo()">⚡ Sobre cupo</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-sm" onclick="abrirNuevaCita(null)" style="background:var(--dark);color:var(--white);border:none;padding:8px 16px;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;">+ Nueva cita</button>
+          <button class="btn-sobrecupo" onclick="abrirSobreCupo()">⚡ Sobre cupo</button>
+        </div>
       </div>
       <div id="agenda-grid" style="padding:12px 16px;"></div>
       <div class="detail-panel" id="detail-panel">
