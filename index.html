@@ -409,11 +409,14 @@ body {
 .ficha-section.active { display: block; }
 
 /* INFO PCTE */
-.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.info-col h4 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
-.info-field { margin-bottom: 10px; }
-.info-field label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 2px; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.info-col h4 { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+.info-field { margin-bottom: 4px; display: flex; align-items: baseline; gap: 8px; padding: 3px 0; border-bottom: 1px solid #f0ede8; }
+.info-field:last-child { border-bottom: none; }
+.info-field label { font-size: 11px; color: var(--muted); min-width: 120px; flex-shrink: 0; }
 .info-field span { font-size: 13px; color: var(--dark); font-weight: 500; }
+.info-bloque { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 10px; }
+.info-bloque-title { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
 .alert-box { background: var(--red-light); border: 1px solid #F5C4C4; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 12px; }
 .alert-box strong { font-size: 12px; color: var(--red); display: block; margin-bottom: 4px; }
 .alert-box span { font-size: 13px; color: var(--red); }
@@ -566,6 +569,19 @@ body {
 .anamnesis-options { display: flex; gap: 16px; align-items: center; }
 .anamnesis-options label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
 .anamnesis-obs { font-size: 12px; color: var(--mid); margin-top: 6px; background: var(--cream); padding: 6px 10px; border-radius: 4px; }
+.anam-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.anam-table thead th { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; padding: 8px 12px; border-bottom: 2px solid var(--border); text-align: left; background: var(--cream); }
+.anam-table tbody tr { border-bottom: 1px solid var(--border); }
+.anam-table tbody tr:last-child { border-bottom: none; }
+.anam-table tbody tr.alerta-row { background: #fdf6f0; }
+.anam-table td { padding: 8px 12px; vertical-align: middle; }
+.anam-td-q { color: var(--dark); font-weight: 400; }
+.anam-td-r { font-weight: 600; white-space: nowrap; }
+.anam-td-r.r-si { color: var(--accent); }
+.anam-td-r.r-no { color: var(--muted); }
+.anam-td-r.r-otro { color: var(--blue); }
+.anam-td-obs { font-size: 12px; color: var(--mid); }
+.anam-alerta-badge { display: inline-flex; align-items: center; gap: 4px; background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 999px; }
 .badge-alerta { background: var(--red-light); color: var(--red); font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 3px; margin-left: 6px; }
 
 /* ORDENES LAB */
@@ -742,7 +758,7 @@ body {
     <div class="page" id="page-buscador">
       <div class="page-header">
         <div class="page-title">Buscador de Pacientes</div>
-        <button class="btn-sm" onclick="showModal('nuevo-pcte')">+ Nuevo Paciente</button>
+        <button class="btn-sm" onclick="abrirNuevoPaciente()">+ Nuevo Paciente</button>
       </div>
       <div class="search-box">
         <div class="search-input-wrap">
@@ -1035,26 +1051,36 @@ body {
         <div class="ficha-section active" id="ftab-info">
           <div class="info-grid">
             <div class="info-col">
-              <h4>Datos personales</h4>
-              <div class="info-field"><label>Nombres</label><span>Diego Ignacio</span></div>
-              <div class="info-field"><label>Apellidos</label><span>Torres Aguirre</span></div>
-              <div class="info-field"><label>Fecha de nacimiento</label><span>12/01/1988</span></div>
-              <div class="info-field"><label>Edad</label><span>38 años y 5 meses</span></div>
-              <div class="info-field"><label>Teléfono</label><span>+569 36663636</span></div>
-              <div class="info-field"><label>Mail</label><span style="color:var(--blue)">diego@gmail.com</span></div>
-              <h4 style="margin-top:20px;">Apoderado 1</h4>
-              <div class="info-field"><label>Nombre</label><span>Georgina Aguirre (mamá)</span></div>
-              <div class="info-field"><label>Teléfono</label><span>+569 36663636</span></div>
-              <div class="info-field"><label>Mail</label><span style="color:var(--blue)">mama@gmail.com</span></div>
-              <h4 style="margin-top:20px;">Apoderado 2</h4>
-              <div class="info-field"><label>Nombre</label><span>José Torres (papá)</span></div>
-              <div class="info-field"><label>Teléfono</label><span>+569 36663636</span></div>
-              <div class="info-field"><label>Mail</label><span style="color:var(--blue)">papa@gmail.com</span></div>
+
+              <div class="info-bloque">
+                <div class="info-bloque-title">Datos del paciente</div>
+                <div class="info-field"><label>Nombres</label><span>Diego Ignacio</span></div>
+                <div class="info-field"><label>Apellidos</label><span>Torres Aguirre</span></div>
+                <div class="info-field"><label>Fecha de nacimiento</label><span>12/01/1988</span></div>
+                <div class="info-field"><label>Edad</label><span>38 años y 5 meses</span></div>
+                <div class="info-field"><label>Teléfono</label><span>+569 36663636</span></div>
+                <div class="info-field"><label>Mail</label><span style="color:var(--blue)">diego@gmail.com</span></div>
+              </div>
+
+              <div class="info-bloque">
+                <div class="info-bloque-title">Apoderado 1</div>
+                <div class="info-field"><label>Nombre</label><span>Georgina Aguirre (mamá)</span></div>
+                <div class="info-field"><label>Teléfono</label><span>+569 36663636</span></div>
+                <div class="info-field"><label>Mail</label><span style="color:var(--blue)">mama@gmail.com</span></div>
+              </div>
+
+              <div class="info-bloque">
+                <div class="info-bloque-title">Apoderado 2</div>
+                <div class="info-field"><label>Nombre</label><span>José Torres (papá)</span></div>
+                <div class="info-field"><label>Teléfono</label><span>+569 36663636</span></div>
+                <div class="info-field"><label>Mail</label><span style="color:var(--blue)">papa@gmail.com</span></div>
+              </div>
+
             </div>
             <div class="info-col">
               <div class="alert-box"><strong>⚠ Alerta médica</strong><span>Alérgico a penicilina / paracetamol — VIH(+) — TEA</span></div>
               <div class="conv-box"><strong>🤝 Convenio</strong><span>SmileUp</span></div>
-              <div class="comment-box" style="margin-bottom:12px;"><strong>📍 Referencias</strong><span>Sobrino de Camila Bustos / lo vio x Internet / me vio en Ig</span></div>
+              <div class="comment-box" style="margin-bottom:10px;"><strong>📍 Referencias</strong><span>Sobrino de Camila Bustos / lo vio x Internet / me vio en Ig</span></div>
               <div class="comment-box"><strong>💬 Comentarios</strong><span>Atiendo a sus otros 2 hermanos / Pcte miedoso / Estudia psicología</span></div>
             </div>
           </div>
@@ -1396,6 +1422,96 @@ function renderSearch(q) {
       </div>
     </div>`;
   }).join('') || '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px;">No se encontraron pacientes</div>';
+}
+
+function abrirNuevoPaciente() {
+  document.getElementById('modal-content').innerHTML = `
+    <h3>Nuevo paciente</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+      <div class="modal-field" style="grid-column:1/-1"><label>— Datos personales —</label></div>
+      <div class="modal-field"><label>Nombres *</label><input id="np2-nombres" type="text" required></div>
+      <div class="modal-field"><label>Apellidos *</label><input id="np2-apellidos" type="text" required></div>
+      <div class="modal-field"><label>RUT *</label><input id="np2-rut" type="text" placeholder="12.345.678-9" required></div>
+      <div class="modal-field"><label>N° Ficha *</label><input id="np2-ficha" type="text" required></div>
+      <div class="modal-field"><label>Fecha de nacimiento</label><input id="np2-fnac" type="date"></div>
+      <div class="modal-field"><label>Convenio</label>
+        <select id="np2-convenio"><option>Particular</option><option>Fonasa</option><option>SmileUp</option><option>Isapre Cruz Blanca</option><option>Isapre Banmédica</option><option>Isapre Consalud</option></select>
+      </div>
+      <div class="modal-field"><label>Teléfono</label><input id="np2-fono" type="text"></div>
+      <div class="modal-field"><label>Email</label><input id="np2-email" type="email"></div>
+      <div class="modal-field" style="grid-column:1/-1"><label>— Apoderado 1 (opcional) —</label></div>
+      <div class="modal-field"><label>Nombre apoderado 1</label><input id="np2-ap1nombre" type="text"></div>
+      <div class="modal-field"><label>Teléfono</label><input id="np2-ap1fono" type="text"></div>
+      <div class="modal-field"><label>Email</label><input id="np2-ap1email" type="email"></div>
+      <div class="modal-field"><label>Relación</label><input id="np2-ap1rel" type="text" placeholder="Ej: mamá, papá, tutor"></div>
+      <div class="modal-field" style="grid-column:1/-1"><label>— Apoderado 2 (opcional) —</label></div>
+      <div class="modal-field"><label>Nombre apoderado 2</label><input id="np2-ap2nombre" type="text"></div>
+      <div class="modal-field"><label>Teléfono</label><input id="np2-ap2fono" type="text"></div>
+      <div class="modal-field"><label>Email</label><input id="np2-ap2email" type="email"></div>
+      <div class="modal-field"><label>Relación</label><input id="np2-ap2rel" type="text" placeholder="Ej: mamá, papá, tutor"></div>
+      <div class="modal-field" style="grid-column:1/-1"><label>— Información adicional —</label></div>
+      <div class="modal-field"><label>Referencias</label><input id="np2-ref" type="text" placeholder="Cómo llegó a la clínica"></div>
+      <div class="modal-field" style="grid-column:1/-1"><label>Comentarios</label><textarea id="np2-obs" placeholder="Notas relevantes del paciente..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarNuevoPacienteCompleto()">Registrar paciente</button>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+async function guardarNuevoPacienteCompleto() {
+  const nombres = document.getElementById('np2-nombres').value.trim();
+  const apellidos = document.getElementById('np2-apellidos').value.trim();
+  const rut = document.getElementById('np2-rut').value.trim();
+  const ficha = document.getElementById('np2-ficha').value.trim();
+  if(!nombres || !apellidos || !rut || !ficha) { showToast('Completa los campos obligatorios (*)'); return; }
+
+  const nombre = nombres + ' ' + apellidos;
+  const fnac = document.getElementById('np2-fnac').value;
+  let edad = null;
+  if(fnac) { const d = new Date(fnac); edad = Math.floor((Date.now()-d)/(365.25*24*3600*1000)); }
+
+  // Construir comentarios con apoderados
+  const ap1n = document.getElementById('np2-ap1nombre').value.trim();
+  const ap1f = document.getElementById('np2-ap1fono').value.trim();
+  const ap1e = document.getElementById('np2-ap1email').value.trim();
+  const ap1r = document.getElementById('np2-ap1rel').value.trim();
+  const ap2n = document.getElementById('np2-ap2nombre').value.trim();
+  const ap2f = document.getElementById('np2-ap2fono').value.trim();
+  const ap2e = document.getElementById('np2-ap2email').value.trim();
+  const ap2r = document.getElementById('np2-ap2rel').value.trim();
+  const ref = document.getElementById('np2-ref').value.trim();
+  const obs = document.getElementById('np2-obs').value.trim();
+
+  const obj = {
+    nombre,
+    rut,
+    ficha,
+    edad,
+    convenio: document.getElementById('np2-convenio').value,
+    fono: document.getElementById('np2-fono').value.trim(),
+    email: document.getElementById('np2-email').value.trim(),
+    // Guardamos apoderados y extras en campos adicionales
+    apoderado1_nombre: ap1n ? `${ap1n}${ap1r?' ('+ap1r+')':''}` : null,
+    apoderado1_fono: ap1f || null,
+    apoderado1_email: ap1e || null,
+    apoderado2_nombre: ap2n ? `${ap2n}${ap2r?' ('+ap2r+')':''}` : null,
+    apoderado2_fono: ap2f || null,
+    apoderado2_email: ap2e || null,
+    referencias: ref || null,
+    comentarios: obs || null,
+  };
+
+  const { error } = await sb.from('pacientes').insert(obj);
+  if(error) {
+    if(error.code === '23505') showToast('Ya existe un paciente con ese RUT o N° ficha');
+    else { showToast('Error al registrar paciente'); console.error(error); }
+    return;
+  }
+  await cargarPacientes();
+  closeModal();
+  showToast('Paciente registrado correctamente');
 }
 
 async function guardarNuevoPaciente(form) {
@@ -2157,12 +2273,28 @@ async function cargarAnamnesis() {
   renderAnamnesis();
 }
 function renderAnamnesis() {
-  document.getElementById('anamnesis-content').innerHTML = anamnesisData.map(a => `
-    <div class="anamnesis-row ${a.alerta ? 'alerta' : ''}">
-      <div class="anamnesis-q">${a.pregunta}</div>
-      <div class="anamnesis-r ${a.respuesta==='Si'?'resp-si':a.respuesta==='No'?'resp-no':'resp-otro'}">${a.respuesta||'—'}</div>
-      ${a.observacion ? `<div class="anamnesis-obs">⚠ ${a.observacion}</div>` : ''}
-    </div>`).join('') || '<p style="color:var(--muted);font-size:13px;padding:16px;">Sin datos de anamnesis</p>';
+  if(!anamnesisData.length) {
+    document.getElementById('anamnesis-content').innerHTML = '<p style="color:var(--muted);font-size:13px;padding:16px;">Sin datos de anamnesis</p>';
+    return;
+  }
+  document.getElementById('anamnesis-content').innerHTML = `
+    <table class="anam-table">
+      <thead>
+        <tr>
+          <th style="width:55%">Pregunta</th>
+          <th style="width:10%">Respuesta</th>
+          <th>Observación</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${anamnesisData.map(a => `
+          <tr class="${a.alerta ? 'alerta-row' : ''}">
+            <td class="anam-td-q">${a.pregunta}</td>
+            <td class="anam-td-r ${a.respuesta==='Si'?'r-si':a.respuesta==='No'?'r-no':'r-otro'}">${a.respuesta||'—'}</td>
+            <td class="anam-td-obs">${a.observacion ? `<span class="anam-alerta-badge">⚠ ${a.observacion}</span>` : ''}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
 }
 
 // ============================================================
