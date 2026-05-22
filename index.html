@@ -205,6 +205,19 @@ body {
 /* AGENDA DIARIA */
 
 
+
+/* ADMINISTRACIÓN & CONFIGURACIÓN */
+.admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.admin-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; }
+.admin-card-title { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.admin-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.admin-row:last-child { border-bottom: none; }
+.admin-row-label { color: var(--dark); font-weight: 500; }
+.admin-row-val { color: var(--muted); font-size: 12px; }
+.admin-btns { display: flex; gap: 6px; }
+.convenio-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 500; }
+.convenio-item:last-child { border-bottom: none; }
+
 /* SOBRE CUPO */
 .tag-sobrecupo { display:inline-block; background:#FEF3C7; color:#92400E; font-size:10px; font-weight:600; padding:2px 7px; border-radius:999px; margin-left:8px; vertical-align:middle; border:1px solid #FDE68A; }
 .slot-block.sobrecupo-slot { background: #FFFBEB; border-left: 3px solid #F59E0B; }
@@ -671,6 +684,8 @@ body {
     <button class="navtab" onclick="showPage('caja',this)">Control de Caja</button>
     <button class="navtab" onclick="showPage('micuenta',this)">Mi Cuenta</button>
     <button class="navtab" onclick="showPage('insumos',this)">Insumos</button>
+    <button class="navtab" onclick="showPage('administracion',this)">Administración</button>
+    <button class="navtab" onclick="showPage('configuracion',this)">Configuración</button>
   </div>
 
   <div class="main">
@@ -871,6 +886,119 @@ body {
         <thead><tr><th style="width:40px;">Comprar</th><th>Insumo</th><th>Stock</th><th>Proveedor</th><th>Link de compra</th></tr></thead>
         <tbody id="insumos-body"></tbody>
       </table>
+    </div>
+
+    <!-- ADMINISTRACIÓN -->
+    <div class="page" id="page-administracion">
+      <div class="page-header">
+        <div class="page-title">Administración</div>
+        <button class="btn-sm" onclick="showModal('nuevo-convenio')">+ Nuevo convenio</button>
+      </div>
+      <div class="admin-grid">
+        <div class="admin-card">
+          <div class="admin-card-title">Convenios</div>
+          <div id="convenios-list">
+            <div class="convenio-item">
+              <span>SmileUp — Ortodoncia</span>
+              <div class="admin-btns">
+                <button class="btn-xs" onclick="showToast('Editando convenio...')">Editar</button>
+                <button class="btn-xs" style="color:var(--red);border-color:var(--red);" onclick="showToast('Convenio eliminado')">Eliminar</button>
+              </div>
+            </div>
+            <div class="convenio-item">
+              <span>Fonasa — Plan General</span>
+              <div class="admin-btns">
+                <button class="btn-xs" onclick="showToast('Editando convenio...')">Editar</button>
+                <button class="btn-xs" style="color:var(--red);border-color:var(--red);" onclick="showToast('Convenio eliminado')">Eliminar</button>
+              </div>
+            </div>
+            <div class="convenio-item">
+              <span>Cruz Blanca — Dental Básico</span>
+              <div class="admin-btns">
+                <button class="btn-xs" onclick="showToast('Editando convenio...')">Editar</button>
+                <button class="btn-xs" style="color:var(--red);border-color:var(--red);" onclick="showToast('Convenio eliminado')">Eliminar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-title">Facturación Electrónica</div>
+          <div class="admin-row">
+            <span class="admin-row-label">RUT emisor</span>
+            <span class="admin-row-val">18.020.541-K</span>
+          </div>
+          <div class="admin-row">
+            <span class="admin-row-label">Razón social</span>
+            <span class="admin-row-val">Daniela Mena Salin</span>
+          </div>
+          <div class="admin-row">
+            <span class="admin-row-label">Resolución SII</span>
+            <span style="color:var(--green);font-size:12px;font-weight:500;">✓ Autorizado</span>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="btn-sm" onclick="showToast('Emitiendo boleta...')">Emitir boleta</button>
+            <button class="btn-sm" onclick="showToast('Emitiendo factura...')">Emitir factura</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIGURACIÓN -->
+    <div class="page" id="page-configuracion">
+      <div class="page-header"><div class="page-title">Configuración</div></div>
+      <div class="admin-grid">
+        <div class="admin-card">
+          <div class="admin-card-title">Identidad y Logo</div>
+          <div class="admin-row">
+            <span class="admin-row-label">Logo del sistema</span>
+            <button class="btn-xs" onclick="showToast('Abriendo selector de logo...')">Cambiar logo</button>
+          </div>
+          <div class="admin-row">
+            <span class="admin-row-label">Nombre clínica</span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="admin-row-val">Dra. Daniela Mena Ortodoncia</span>
+              <button class="btn-xs" onclick="editarNombreClinica()">Editar</button>
+            </div>
+          </div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-title">Documentos y Plantillas</div>
+          <div class="admin-row">
+            <span class="admin-row-label">Consentimientos informados</span>
+            <button class="btn-xs" onclick="showToast('Gestionando consentimientos...')">Gestionar</button>
+          </div>
+          <div class="admin-row">
+            <span class="admin-row-label">Recetas médicas</span>
+            <button class="btn-xs" onclick="showToast('Gestionando recetas...')">Gestionar</button>
+          </div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-title">Presupuestos y Aranceles</div>
+          <div class="admin-row">
+            <span class="admin-row-label">Plantillas de presupuestos</span>
+            <button class="btn-xs" onclick="showToast('Gestionando plantillas...')">Gestionar</button>
+          </div>
+          <div class="admin-row">
+            <span class="admin-row-label">Aranceles y precios</span>
+            <button class="btn-xs" onclick="editarAranceles()">Editar</button>
+          </div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-title">Sistema</div>
+          <div class="admin-row">
+            <span class="admin-row-label">Usuarios y accesos</span>
+            <button class="btn-xs" onclick="showToast('Gestionando usuarios...')">Gestionar</button>
+          </div>
+          <div class="admin-row">
+            <span class="admin-row-label">Notificaciones</span>
+            <button class="btn-xs" onclick="showToast('Configurando notificaciones...')">Configurar</button>
+          </div>
+          <div class="admin-row">
+            <span class="admin-row-label">Versión del sistema</span>
+            <span class="admin-row-val">v1.0.0 — Mayo 2026</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- FICHA PACIENTE -->
@@ -2185,6 +2313,17 @@ const modalTemplates = {
     </div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancelar</button><button class="btn-primary" onclick="closeModal();showToast('Documento creado y enviado al mail del paciente')">Crear y enviar</button></div>`,
 
+  'nuevo-convenio': () => `
+    <h3>Nuevo convenio</h3>
+    <div class="modal-field"><label>Nombre convenio</label><input name="nombre" type="text" placeholder="Ej: Isapre Vida Tres"></div>
+    <div class="modal-field"><label>Tipo / Plan</label><input name="tipo" type="text" placeholder="Ej: Plan Dental Premium"></div>
+    <div class="modal-field"><label>% Cobertura</label><input name="cobertura" type="text" placeholder="Ej: 80%"></div>
+    <div class="modal-field"><label>Observaciones</label><textarea name="obs" placeholder="Condiciones especiales..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="closeModal();showToast('Convenio creado')">Crear convenio</button>
+    </div>`,
+
   'nueva-ic': () => `
     <h3>Nueva interconsulta</h3>
     <div class="modal-field"><label>Para especialista</label><input type="text" placeholder="Ej: Dr. Ramírez — Cirugía maxilofacial"></div>
@@ -2231,6 +2370,32 @@ function closeModalOnBg(e) { if(e.target===document.getElementById('modal-backdr
 
 // ============================================================
 // CALENDARIO TOGGLE
+function editarNombreClinica() {
+  document.getElementById('modal-content').innerHTML = `
+    <h3>Nombre de la clínica</h3>
+    <div class="modal-field"><label>Nombre</label><input id="cfg-nombre" type="text" value="Dra. Daniela Mena Ortodoncia"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="closeModal();showToast('Nombre actualizado')">Guardar</button>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function editarAranceles() {
+  document.getElementById('modal-content').innerHTML = `
+    <h3>Aranceles y precios</h3>
+    <div class="modal-field"><label>Evaluación inicial</label><input type="text" value="$40.000"></div>
+    <div class="modal-field"><label>Control ortodoncia</label><input type="text" value="$50.000"></div>
+    <div class="modal-field"><label>Instalación brackets metálicos</label><input type="text" value="$350.000"></div>
+    <div class="modal-field"><label>Instalación brackets cerámicos</label><input type="text" value="$450.000"></div>
+    <div class="modal-field"><label>Retiro brackets</label><input type="text" value="$120.000"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="closeModal();showToast('Aranceles actualizados')">Guardar</button>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
 function toggleCal() {
   const popup = document.getElementById('cal-popup');
   popup.classList.toggle('open');
