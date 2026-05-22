@@ -628,9 +628,9 @@ body {
     <!-- Calendar popup -->
     <div class="cal-popup" id="cal-popup">
       <div class="cal-header">
-        <button class="cal-nav" onclick="calPrev()">&#8249;</button>
+        <button class="cal-nav" onclick="prevMonth()">&#8249;</button>
         <span id="cal-title">Abril 2026</span>
-        <button class="cal-nav" onclick="calNext()">&#8250;</button>
+        <button class="cal-nav" onclick="nextMonth()">&#8250;</button>
       </div>
       <div class="cal-grid" id="cal-grid"></div>
       <button class="cal-close" onclick="toggleCal()">Cerrar</button>
@@ -1360,11 +1360,13 @@ let calDate = new Date();
 function renderCalendar() {
   const y = calDate.getFullYear(), m = calDate.getMonth();
   const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  document.getElementById('cal-month-label').textContent = months[m] + ' ' + y;
+  const titleEl = document.getElementById('cal-title');
+  if(titleEl) titleEl.textContent = months[m] + ' ' + y;
   const first = new Date(y, m, 1).getDay();
   const days = new Date(y, m+1, 0).getDate();
   const offset = first === 0 ? 6 : first - 1;
-  let html = '';
+  const dayHeaders = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
+  let html = dayHeaders.map(d => `<div class="cal-day-header">${d}</div>`).join('');
   for(let i=0; i<offset; i++) html += '<div class="cal-day empty"></div>';
   for(let d=1; d<=days; d++) {
     const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -1372,7 +1374,8 @@ function renderCalendar() {
     const isActive = dateStr === agendaFecha;
     html += `<div class="cal-day${isToday?' today':''}${isActive?' active':''}" onclick="selectCalDate('${dateStr}')">${d}</div>`;
   }
-  document.getElementById('cal-grid').innerHTML = html;
+  const gridEl = document.getElementById('cal-grid');
+  if(gridEl) gridEl.innerHTML = html;
 }
 function prevMonth() { calDate.setMonth(calDate.getMonth()-1); renderCalendar(); }
 function nextMonth() { calDate.setMonth(calDate.getMonth()+1); renderCalendar(); }
