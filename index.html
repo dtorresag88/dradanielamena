@@ -1474,8 +1474,7 @@ function renderPasoUno() {
       <div class="modal-field" style="grid-column:1/-1;margin-bottom:4px;"><span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;">Datos personales</span></div>
       <div class="modal-field"><label>Nombres *</label><input id="np2-nombres" type="text" required></div>
       <div class="modal-field"><label>Apellidos *</label><input id="np2-apellidos" type="text" required></div>
-      <div class="modal-field"><label>RUT *</label><input id="np2-rut" type="text" placeholder="12.345.678-9" required></div>
-      <div class="modal-field"><label>N° Ficha *</label><input id="np2-ficha" type="text" required></div>
+      <div class="modal-field" style="grid-column:1/-1"><label>RUT *</label><input id="np2-rut" type="text" placeholder="12.345.678-9" required></div>
       <div class="modal-field"><label>Fecha de nacimiento</label><input id="np2-fnac" type="date"></div>
       <div class="modal-field"><label>Convenio</label>
         <select id="np2-convenio"><option>Particular</option><option>Fonasa</option><option>SmileUp</option><option>Isapre Cruz Blanca</option><option>Isapre Banmédica</option><option>Isapre Consalud</option></select>
@@ -1509,8 +1508,10 @@ function irPasoDos() {
   const nombres = document.getElementById('np2-nombres').value.trim();
   const apellidos = document.getElementById('np2-apellidos').value.trim();
   const rut = document.getElementById('np2-rut').value.trim();
-  const ficha = document.getElementById('np2-ficha').value.trim();
-  if(!nombres || !apellidos || !rut || !ficha) { showToast('Completa los campos obligatorios (*)'); return; }
+  if(!nombres || !apellidos || !rut) { showToast('Completa los campos obligatorios (*)'); return; }
+  // Generar N° ficha automático: máximo existente + 1
+  const fichasExistentes = pacientes.map(p => parseInt(p.ficha)||0);
+  const ficha = String(fichasExistentes.length ? Math.max(...fichasExistentes)+1 : 10001);
   const fnac = document.getElementById('np2-fnac').value;
   let edad = null;
   if(fnac) edad = Math.floor((Date.now()-new Date(fnac))/(365.25*24*3600*1000));
@@ -1552,6 +1553,11 @@ function renderPasoDos() {
       <td style="padding:6px 12px;">
         <input type="text" id="an-obs-${i}" placeholder="Observación..." style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;color:var(--dark);">
       </td>
+      <td style="padding:6px 12px;text-align:center;">
+        <label title="Marcar como alerta médica" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;font-size:11px;color:#92400e;white-space:nowrap;">
+          <input type="checkbox" id="an-alerta-${i}" style="accent-color:#F59E0B;width:15px;height:15px;"> ⚠
+        </label>
+      </td>
     </tr>`).join('');
 
   document.getElementById('modal-content').innerHTML = `
@@ -1568,17 +1574,17 @@ function renderPasoDos() {
       <table style="width:100%;border-collapse:collapse;">
         <thead style="position:sticky;top:0;z-index:1;">
           <tr style="background:var(--cream);">
-            <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;text-align:left;border-bottom:2px solid var(--border);width:50%">Pregunta</th>
-            <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;text-align:left;border-bottom:2px solid var(--border);width:20%">Respuesta</th>
+            <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;text-align:left;border-bottom:2px solid var(--border);width:42%">Pregunta</th>
+            <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;text-align:left;border-bottom:2px solid var(--border);width:22%">Respuesta</th>
             <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;text-align:left;border-bottom:2px solid var(--border);">Observación</th>
+            <th style="padding:8px 12px;font-size:11px;font-weight:600;color:#92400e;text-transform:uppercase;letter-spacing:.07em;text-align:center;border-bottom:2px solid var(--border);width:60px">Alerta</th>
           </tr>
         </thead>
         <tbody>${filas}</tbody>
       </table>
     </div>
-    <div style="margin-top:16px;padding:14px 16px;background:#fef9f0;border:1px solid #fde68a;border-radius:var(--radius-sm);">
-      <div style="font-size:11px;font-weight:700;color:#92400e;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">⚠ Alerta médica (visible en la ficha)</div>
-      <textarea id="np2-alerta" rows="2" placeholder="Ej: Alérgico a penicilina — VIH(+) — TEA. Dejar en blanco si no aplica." style="width:100%;padding:8px 10px;border:1px solid #fde68a;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;background:#fffbeb;resize:vertical;"></textarea>
+    <div style="margin-top:12px;padding:10px 14px;background:#fef9f0;border:1px solid #fde68a;border-radius:var(--radius-sm);font-size:12px;color:#92400e;">
+      ⚠ Marca el checkbox de cada fila para indicar que es una alerta médica. Se mostrará en la ficha del paciente.
     </div>
     <div class="modal-actions" style="margin-top:16px;">
       <button class="btn-cancel" onclick="renderPasoUno()">← Volver</button>
@@ -1590,9 +1596,7 @@ function renderPasoDos() {
 }
 
 async function guardarNuevoPacienteCompleto(conAnamnesis) {
-  // Capturar alerta médica si está en el DOM
-  const alertaEl = document.getElementById('np2-alerta');
-  if(alertaEl && alertaEl.value.trim()) _npDatos.alerta_medica = alertaEl.value.trim();
+  // alerta_medica se genera desde las filas marcadas en el paso 2 (ver abajo)
   const { error } = await sb.from('pacientes').insert(_npDatos);
   if(error) {
     if(error.code === '23505') showToast('Ya existe un paciente con ese RUT o N° ficha');
@@ -1602,19 +1606,29 @@ async function guardarNuevoPacienteCompleto(conAnamnesis) {
 
   // Guardar anamnesis si se completó
   if(conAnamnesis) {
-    const alertasRespuestas = ['Si', 'Otro'];
     const registros = PREGUNTAS_ANAMNESIS.map((q, i) => {
       const resp = document.querySelector(`input[name="an-${i}"]:checked`)?.value || 'No';
       const obs = document.getElementById(`an-obs-${i}`)?.value.trim() || '';
+      const alerta = document.getElementById(`an-alerta-${i}`)?.checked || false;
       return {
         paciente_rut: _npDatos.rut,
         pregunta: q,
         respuesta: resp,
-        alerta: alertasRespuestas.includes(resp),
+        alerta: alerta,
         observacion: obs || null,
       };
     });
     await sb.from('anamnesis').insert(registros);
+    // Generar texto de alerta médica desde filas marcadas
+    const alertaTexto = registros.filter(r => r.alerta)
+      .map(r => r.observacion || r.pregunta.replace('¿','').replace('?',''))
+      .join(' — ');
+    if(alertaTexto) {
+      await sb.from('pacientes').update({alerta_medica: alertaTexto}).eq('rut', _npDatos.rut);
+      // Actualizar en memoria
+      const pac = pacientes.find(p => p.rut === _npDatos.rut);
+      if(pac) pac.alerta_medica = alertaTexto;
+    }
   }
 
   await cargarPacientes();
