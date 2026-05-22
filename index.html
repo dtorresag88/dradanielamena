@@ -204,6 +204,13 @@ body {
 
 /* AGENDA DIARIA */
 
+
+/* SOBRE CUPO */
+.tag-sobrecupo { display:inline-block; background:#FEF3C7; color:#92400E; font-size:10px; font-weight:600; padding:2px 7px; border-radius:999px; margin-left:8px; vertical-align:middle; border:1px solid #FDE68A; }
+.slot-block.sobrecupo-slot { background: #FFFBEB; border-left: 3px solid #F59E0B; }
+.btn-sobrecupo { background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; padding:8px 16px; border-radius:var(--radius-sm); font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; transition:opacity .15s; }
+.btn-sobrecupo:hover { opacity:.8; }
+
 /* AGENDA GRID */
 .agenda-grid-wrap { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
 .agenda-slot { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); min-height: 36px; }
@@ -669,9 +676,11 @@ body {
   <div class="main">
     <!-- SIDEBAR -->
     <div class="sidebar visible" id="sidebar">
-      <h4>Anulaciones de hoy</h4>
-      <div class="anulacion-item">Luis Pérez 18:30</div>
-      <div class="anulacion-item">Macarena López 18:45</div>
+      <h4 id="sidebar-titulo">Anulaciones de hoy</h4>
+      <div id="sidebar-anulaciones">
+        <div class="anulacion-item">Luis Pérez 18:30</div>
+        <div class="anulacion-item">Macarena López 18:45</div>
+      </div>
       <div class="legend">
         <div class="legend-item"><div class="legend-dot ld-agendado"></div>Agendado</div>
         <div class="legend-item"><div class="legend-dot ld-confirmado"></div>Confirmado (vía mail)</div>
@@ -691,6 +700,7 @@ body {
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px 0;">
         <div style="font-size:12px;color:var(--muted);">Haz clic en un bloque libre para agendar</div>
         <button class="btn-sm" onclick="abrirNuevaCita(null)" style="background:var(--dark);color:var(--white);border:none;padding:8px 16px;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;">+ Nueva cita</button>
+        <button class="btn-sobrecupo" onclick="abrirSobreCupo()">⚡ Sobre cupo</button>
       </div>
       <div id="agenda-grid" style="padding:12px 16px;"></div>
       <div class="detail-panel" id="detail-panel">
@@ -729,12 +739,31 @@ body {
     <!-- PRODUCCION -->
     <div class="page" id="page-produccion">
       <div class="page-header"><div class="page-title">Producción Profesional</div></div>
-      <div class="prod-filters">
-        <select id="prod-mes"><option>Enero</option><option>Febrero</option><option>Marzo</option><option selected>Abril</option><option>Mayo</option><option>Junio</option></select>
-        <select id="prod-anio"><option>2025</option><option selected>2026</option></select>
+      <div class="prod-filters" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <select id="prod-mes" onchange="renderProduccion()"><option>Enero</option><option>Febrero</option><option>Marzo</option><option selected>Abril</option><option>Mayo</option><option>Junio</option><option>Julio</option><option>Agosto</option><option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option></select>
+        <select id="prod-anio" onchange="renderProduccion()"><option>2025</option><option selected>2026</option></select>
+        <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+          <span style="font-size:12px;color:var(--muted);font-weight:500;">Ordenar por</span>
+          <select id="prod-orden" onchange="renderProduccion()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--white);color:var(--dark);font-family:inherit;">
+            <option value="fecha">Fecha término</option>
+            <option value="paciente">Nombre paciente</option>
+            <option value="prestacion">Prestación</option>
+            <option value="folio">Folio</option>
+            <option value="rut">RUT</option>
+            <option value="monto">Pago</option>
+          </select>
+          <button id="prod-orden-dir" onclick="toggleOrdenDir()" style="border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--white);padding:6px 10px;cursor:pointer;font-size:12px;color:var(--muted);">↓ DESC</button>
+        </div>
       </div>
-      <table class="prod-table">
-        <thead><tr><th>Nombre paciente</th><th>RUT</th><th>Folio ppt</th><th>Fecha término</th><th>Prestación</th><th>Pago</th></tr></thead>
+      <table class="prod-table" style="margin-top:12px;">
+        <thead><tr>
+          <th onclick="setProdOrden('paciente')" style="cursor:pointer;" title="Ordenar">Nombre paciente ⇅</th>
+          <th onclick="setProdOrden('rut')" style="cursor:pointer;" title="Ordenar">RUT ⇅</th>
+          <th onclick="setProdOrden('folio')" style="cursor:pointer;" title="Ordenar">Folio ⇅</th>
+          <th onclick="setProdOrden('fecha')" style="cursor:pointer;" title="Ordenar">Fecha término ⇅</th>
+          <th onclick="setProdOrden('prestacion')" style="cursor:pointer;" title="Ordenar">Prestación ⇅</th>
+          <th onclick="setProdOrden('monto')" style="cursor:pointer;" title="Ordenar">Pago ⇅</th>
+        </tr></thead>
         <tbody id="prod-body"></tbody>
       </table>
     </div>
@@ -1156,7 +1185,41 @@ function showPage(id, el) {
   if(el) el.classList.add('active');
   const sidebar = document.getElementById('sidebar');
   sidebar.className = 'sidebar' + (['diaria','semanal'].includes(id) ? ' visible' : '');
+  if(id === 'diaria') actualizarSidebarDiaria();
+  if(id === 'semanal') actualizarSidebarSemanal();
   closeDetail();
+}
+
+function actualizarSidebarDiaria() {
+  const titulo = document.getElementById('sidebar-titulo');
+  const cont = document.getElementById('sidebar-anulaciones');
+  if(titulo) titulo.textContent = 'Anulaciones de hoy';
+  const anuladas = citas.filter(c => c.estado === 'No asistió' || c.estado === 'Hr anulada');
+  if(cont) cont.innerHTML = anuladas.length
+    ? anuladas.map(c => `<div class="anulacion-item">${c.paciente || '—'} ${c.hora ? c.hora.slice(0,5) : ''}</div>`).join('')
+    : '<div style="font-size:12px;color:var(--muted)">Sin anulaciones hoy</div>';
+}
+
+async function actualizarSidebarSemanal() {
+  const titulo = document.getElementById('sidebar-titulo');
+  const cont = document.getElementById('sidebar-anulaciones');
+  if(titulo) titulo.textContent = 'Anulaciones de la semana';
+  // Calcular lunes y domingo de la semana actual
+  const hoy = new Date(agendaFecha + 'T12:00:00');
+  const dow = hoy.getDay();
+  const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - (dow === 0 ? 6 : dow - 1));
+  const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+  const desde = lunes.toISOString().split('T')[0];
+  const hasta = domingo.toISOString().split('T')[0];
+  const { data } = await sb.from('citas').select('paciente,hora,fecha,estado')
+    .in('estado', ['No asistió', 'Hr anulada'])
+    .gte('fecha', desde).lte('fecha', hasta).order('fecha').order('hora');
+  if(cont) cont.innerHTML = data && data.length
+    ? data.map(c => {
+        const f = c.fecha ? c.fecha.split('-').reverse().join('/') : '';
+        return `<div class="anulacion-item">${c.paciente || '—'}<br><span style="font-size:11px;color:var(--muted)">${f} ${c.hora ? c.hora.slice(0,5) : ''}</span></div>`;
+      }).join('')
+    : '<div style="font-size:12px;color:var(--muted)">Sin anulaciones esta semana</div>';
 }
 function openFicha(rut) {
   if(rut) currentPacienteRut = rut;
@@ -1279,10 +1342,10 @@ function renderAgenda() {
       } else {
         html += `<div class="agenda-slot">
           <div class="slot-time">${slot}</div>
-          <div class="slot-block ocupado" onclick="selectCita(${idx})" style="cursor:pointer;pointer-events:all;" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+          <div class="slot-block ocupado${c.sobrecupo ? ' sobrecupo-slot' : ''}" onclick="selectCita(${idx})" style="cursor:pointer;pointer-events:all;" onmouseover="this.style.background='var(--accent-light)'" onmouseout="this.style.background=''">
             <div class="slot-appt">
               <div>
-                <div class="slot-appt-name">${c.paciente || ''}</div>
+                <div class="slot-appt-name">${c.paciente || ''}${c.sobrecupo ? '<span class="tag-sobrecupo">sobre cupo</span>' : ''}</div>
                 <div class="slot-appt-tipo">${c.tipo || ''}</div>
               </div>
               <div class="slot-appt-badge"><span class="badge ${estadoClass[c.estado] || 'badge-agendado'}">${c.estado || ''}</span></div>
@@ -1308,13 +1371,53 @@ function selectCita(i) {
   const c = citas[i];
   if(c.bloqueado) return;
   const fechaFormat = agendaFecha.split('-').reverse().join('/');
+  document.getElementById('modal-content').innerHTML = `
+    <h3 style="margin-bottom:4px;">Descripción de la cita</h3>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">${fechaFormat} · ${c.hora ? c.hora.slice(0,5) : ''} hrs</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 0;font-size:13px;">
+        <span style="color:var(--muted);font-weight:500;">Paciente</span><span style="color:var(--dark);font-weight:500;">${c.paciente || '—'}</span>
+        <span style="color:var(--muted);font-weight:500;">RUT</span><span>${c.rut || '—'}</span>
+        <span style="color:var(--muted);font-weight:500;">N° Ficha</span><span>${c.ficha || '—'}</span>
+        <span style="color:var(--muted);font-weight:500;">Teléfono</span><span>${c.fono || '—'}</span>
+        <span style="color:var(--muted);font-weight:500;">Email</span><span>${c.email || '—'}</span>
+        <span style="color:var(--muted);font-weight:500;">Tipo de atención</span><span>${c.tipo || '—'}</span>
+        <span style="color:var(--muted);font-weight:500;">Estado</span><span><span class="badge ${estadoClass[c.estado] || 'badge-agendado'}">${c.estado || '—'}</span></span>
+        <span style="color:var(--muted);font-weight:500;">Próxima cita</span><span>${c.proxima || '—'}</span>
+        ${c.obs ? `<span style="color:var(--muted);font-weight:500;">Observaciones</span><span>${c.obs}</span>` : ''}
+      </div>
+    </div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="btn-cancel" style="color:var(--red);border-color:var(--red);" onclick="confirmarEliminarCita(${c.id})">🗑 Eliminar</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-cancel" onclick="closeModal()">Cerrar</button>
+        <button class="btn-cancel" onclick="closeModal();openFicha('${c.rut}')">👤 Ver ficha</button>
+        <button class="btn-primary" onclick="abrirEditarCita(${i})">✏️ Editar</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+function closeDetail() { const p = document.getElementById('detail-panel'); if(p) p.classList.remove('visible'); }
+
+function confirmarEliminarCita(id) {
+  document.getElementById('modal-content').innerHTML = `
+    <h3>¿Eliminar cita?</h3>
+    <p style="font-size:13px;color:var(--muted);margin:16px 0;">Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" style="background:var(--red);" onclick="eliminarCita(${id})">Sí, eliminar</button>
+    </div>`;
+}
+
+function abrirEditarCita(i) {
+  const c = citas[i];
   const estados = ['No confirmado','Confirmado vía mail','Reconfirmado vía WhatsApp','Atendido','No asistió','Agendado'];
   const opts = estados.map(e => `<option ${c.estado===e?'selected':''}>${e}</option>`).join('');
   const tipos = ['Evaluación','Estudio','Inicio','Control','Retiro','Control post-retiro','Urgencia'];
   const tipoOpts = tipos.map(t => `<option ${c.tipo===t?'selected':''}>${t}</option>`).join('');
   document.getElementById('modal-content').innerHTML = `
-    <h3 style="margin-bottom:4px;">Cita — ${c.paciente || 'Sin nombre'}</h3>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">${fechaFormat} · ${c.hora ? c.hora.slice(0,5) : ''} hrs</div>
+    <h3 style="margin-bottom:4px;">Editar cita — ${c.paciente || ''}</h3>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">${agendaFecha.split('-').reverse().join('/')} · ${c.hora ? c.hora.slice(0,5) : ''} hrs</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
       <div class="modal-field"><label>Paciente</label><input id="ec-paciente" type="text" value="${c.paciente||''}"></div>
       <div class="modal-field"><label>RUT</label><input id="ec-rut" type="text" value="${c.rut||''}"></div>
@@ -1326,19 +1429,11 @@ function selectCita(i) {
       <div class="modal-field"><label>Próxima cita</label><input id="ec-proxima" type="text" value="${c.proxima||''}"></div>
     </div>
     <div class="modal-field"><label>Observaciones</label><textarea id="ec-obs">${c.obs||''}</textarea></div>
-    <div class="modal-actions" style="justify-content:space-between;">
-      <button class="btn-cancel" style="color:var(--red);border-color:var(--red);" onclick="eliminarCita(${c.id})">🗑 Eliminar cita</button>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-        <button class="btn-cancel" onclick="closeModal();openFicha('${c.rut}')">👤 Ver ficha</button>
-        <button class="btn-primary" onclick="guardarEditCitaCompleta(${c.id})">Guardar cambios</button>
-      </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="selectCita(${i})">← Volver</button>
+      <button class="btn-primary" onclick="guardarEditCitaCompleta(${c.id})">Guardar cambios</button>
     </div>`;
-  document.getElementById('modal-backdrop').classList.add('open');
 }
-function closeDetail() { const p = document.getElementById('detail-panel'); if(p) p.classList.remove('visible'); }
-
-function abrirEditarCita(i) { selectCita(i); }
 
 async function guardarEditCitaCompleta(id) {
   const updates = {
@@ -1417,6 +1512,81 @@ function abrirNuevaCita(hora) {
       <button class="btn-primary" onclick="guardarCitaDesdeModal()">Agendar</button>
     </div>`;
   document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function abrirSobreCupo() {
+  // Armar lista de horas ocupadas para elegir dónde agregar sobre cupo
+  const horasOcupadas = citas.filter(c => !c.bloqueado).map(c => c.hora ? c.hora.slice(0,5) : '').filter(Boolean);
+  if(!horasOcupadas.length) { showToast('No hay citas agendadas para agregar sobre cupo'); return; }
+  const opts = horasOcupadas.map(h => `<option value="${h}">${h} hrs — ${citas.find(c => c.hora && c.hora.slice(0,5)===h)?.paciente || ''}</option>`).join('');
+  document.getElementById('modal-content').innerHTML = `
+    <h3>⚡ Sobre cupo</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Selecciona el bloque horario donde deseas agregar el sobre cupo:</p>
+    <div class="modal-field"><label>Hora del bloque</label><select id="sc-hora">${opts}</select></div>
+    <div class="modal-field"><label>Paciente</label>
+      <input id="sc-paciente" type="text" placeholder="Nombre o RUT..." oninput="buscarPacienteSC(this.value)" autocomplete="off">
+      <div id="sc-suggestions" style="position:absolute;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);max-height:160px;overflow-y:auto;z-index:999;width:calc(100% - 2px);display:none;box-shadow:var(--shadow);"></div>
+    </div>
+    <div class="modal-field"><label>RUT</label><input id="sc-rut" type="text"></div>
+    <div class="modal-field"><label>N° Ficha</label><input id="sc-ficha" type="text"></div>
+    <div class="modal-field"><label>Fono</label><input id="sc-fono" type="text"></div>
+    <div class="modal-field"><label>Tipo de atención</label>
+      <select id="sc-tipo"><option>Evaluación</option><option>Estudio</option><option>Inicio</option><option>Control</option><option>Retiro</option><option>Urgencia</option></select>
+    </div>
+    <div class="modal-field"><label>Observaciones</label><textarea id="sc-obs"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-sobrecupo" onclick="guardarSobreCupo()">⚡ Agendar sobre cupo</button>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function buscarPacienteSC(q) {
+  const sugg = document.getElementById('sc-suggestions');
+  if(!q || q.length < 2) { sugg.style.display = 'none'; return; }
+  const matches = pacientes.filter(p =>
+    p.nombre.toLowerCase().includes(q.toLowerCase()) || p.rut.includes(q)
+  ).slice(0, 6);
+  if(!matches.length) { sugg.style.display = 'none'; return; }
+  sugg.style.display = 'block';
+  sugg.innerHTML = matches.map(p => `
+    <div onclick="seleccionarPacienteSC(${JSON.stringify(p).replace(/"/g,'&quot;')})"
+      style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);"
+      onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+      <strong>${p.nombre}</strong><br>
+      <span style="font-size:11px;color:var(--muted)">RUT: ${p.rut} | Ficha: ${p.ficha}</span>
+    </div>`).join('');
+}
+
+function seleccionarPacienteSC(p) {
+  document.getElementById('sc-paciente').value = p.nombre;
+  document.getElementById('sc-rut').value = p.rut;
+  document.getElementById('sc-ficha').value = p.ficha;
+  if(document.getElementById('sc-fono')) document.getElementById('sc-fono').value = p.fono || '';
+  document.getElementById('sc-suggestions').style.display = 'none';
+}
+
+async function guardarSobreCupo() {
+  const hora = document.getElementById('sc-hora').value;
+  const obj = {
+    fecha: agendaFecha,
+    hora: hora,
+    paciente: document.getElementById('sc-paciente').value.trim(),
+    rut: document.getElementById('sc-rut').value.trim(),
+    ficha: document.getElementById('sc-ficha').value.trim(),
+    fono: document.getElementById('sc-fono')?.value.trim() || '',
+    tipo: document.getElementById('sc-tipo').value,
+    estado: 'Agendado',
+    obs: document.getElementById('sc-obs').value.trim(),
+    sobrecupo: true,
+    bloqueado: false,
+  };
+  if(!obj.paciente) { showToast('Ingresa el nombre del paciente'); return; }
+  const { error } = await sb.from('citas').insert(obj);
+  if(error) { showToast('Error al agendar sobre cupo'); console.error(error); return; }
+  await cargarCitas();
+  closeModal();
+  showToast('Sobre cupo agendado correctamente');
 }
 
 function buscarPacienteModal(q) {
@@ -1558,9 +1728,41 @@ async function cargarProduccion() {
   prodData = data || [];
   renderProduccion();
 }
+let prodOrdenDir = 'desc';
+
+function setProdOrden(campo) {
+  const sel = document.getElementById('prod-orden');
+  if(sel.value === campo) {
+    prodOrdenDir = prodOrdenDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sel.value = campo;
+    prodOrdenDir = 'asc';
+  }
+  const btn = document.getElementById('prod-orden-dir');
+  if(btn) btn.textContent = prodOrdenDir === 'asc' ? '↑ ASC' : '↓ DESC';
+  renderProduccion();
+}
+
+function toggleOrdenDir() {
+  prodOrdenDir = prodOrdenDir === 'asc' ? 'desc' : 'asc';
+  const btn = document.getElementById('prod-orden-dir');
+  if(btn) btn.textContent = prodOrdenDir === 'asc' ? '↑ ASC' : '↓ DESC';
+  renderProduccion();
+}
+
 function renderProduccion() {
+  const campo = document.getElementById('prod-orden')?.value || 'fecha';
+  const sorted = [...prodData].sort((a, b) => {
+    let va = a[campo] ?? '';
+    let vb = b[campo] ?? '';
+    if(campo === 'monto') { va = Number(va); vb = Number(vb); }
+    else { va = String(va).toLowerCase(); vb = String(vb).toLowerCase(); }
+    if(va < vb) return prodOrdenDir === 'asc' ? -1 : 1;
+    if(va > vb) return prodOrdenDir === 'asc' ? 1 : -1;
+    return 0;
+  });
   let total = 0;
-  document.getElementById('prod-body').innerHTML = prodData.map(p => {
+  document.getElementById('prod-body').innerHTML = sorted.map(p => {
     total += p.monto || 0;
     const fechaFmt = p.fecha ? p.fecha.split('-').reverse().join('/') : '';
     return `<tr><td>${p.paciente||''}</td><td>${p.rut||''}</td><td>${p.folio||''}</td><td>${fechaFmt}</td><td>${p.prestacion||''}</td><td>$${(p.monto||0).toLocaleString('es-CL')}</td></tr>`;
