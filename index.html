@@ -420,12 +420,12 @@ body {
 .alert-box { background: var(--red-light); border: 1px solid #F5C4C4; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 12px; }
 .alert-box strong { font-size: 12px; color: var(--red); display: block; margin-bottom: 4px; }
 .alert-box span { font-size: 13px; color: var(--red); }
-.conv-box { background: var(--blue-light); border: 1px solid #B8D0EA; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 12px; }
-.conv-box strong { font-size: 12px; color: var(--blue); display: block; margin-bottom: 4px; }
-.conv-box span { font-size: 13px; color: var(--blue); }
-.comment-box { background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; }
-.comment-box strong { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
-.comment-box span { font-size: 13px; color: var(--mid); }
+.conv-box { padding: 4px 0; margin-bottom: 10px; }
+.conv-box strong { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; display: block; margin-bottom: 3px; }
+.conv-box span { font-size: 13px; color: var(--dark); font-weight: 500; }
+.comment-box { padding: 4px 0; margin-bottom: 10px; }
+.comment-box strong { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; display: block; margin-bottom: 3px; }
+.comment-box span { font-size: 13px; color: var(--dark); }
 
 /* PRESUPUESTOS */
 .presup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
@@ -1026,7 +1026,8 @@ body {
           <div>
             <div style="display:flex;align-items:center;gap:8px;">
               <div class="ficha-name" id="ficha-name">Diego Torres Aguirre</div>
-              <span class="ficha-alert">⚠ Alerta médica</span>
+              <span class="ficha-alert" id="ficha-alert-badge">⚠ Alerta médica</span>
+              <button onclick="abrirEditarPaciente()" style="margin-left:8px;background:none;border:1px solid var(--border);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:500;color:var(--mid);cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--dark)';this.style.color='var(--dark)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--mid)'">✏️ Editar</button>
             </div>
             <div class="ficha-meta" id="ficha-meta">RUT: 16.666.666-6 &nbsp;|&nbsp; N° Ficha: 88774 &nbsp;|&nbsp; 38 años</div>
           </div>
@@ -1446,6 +1447,67 @@ function openFicha(rut) {
   cargarAnamnesis();
   cargarPresupuestos();
 }
+function abrirEditarPaciente() {
+  const pac = pacientes.find(p => p.rut === currentPacienteRut);
+  if(!pac) return;
+  document.getElementById('modal-content').innerHTML = `
+    <h3>Editar paciente — ${pac.nombre}</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+      <div class="modal-field" style="grid-column:1/-1"><span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;">Datos personales</span></div>
+      <div class="modal-field"><label>Nombre completo</label><input id="ep-nombre" type="text" value="${pac.nombre||''}"></div>
+      <div class="modal-field"><label>RUT</label><input id="ep-rut" type="text" value="${pac.rut||''}" readonly style="background:var(--cream);color:var(--muted)"></div>
+      <div class="modal-field"><label>N° Ficha</label><input id="ep-ficha" type="text" value="${pac.ficha||''}" readonly style="background:var(--cream);color:var(--muted)"></div>
+      <div class="modal-field"><label>Convenio</label>
+        <select id="ep-convenio">
+          ${['Particular','Fonasa','SmileUp','Isapre Cruz Blanca','Isapre Banmédica','Isapre Consalud'].map(c=>`<option ${pac.convenio===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="modal-field"><label>Teléfono</label><input id="ep-fono" type="text" value="${pac.fono||''}"></div>
+      <div class="modal-field"><label>Email</label><input id="ep-email" type="email" value="${pac.email||''}"></div>
+      <div class="modal-field" style="grid-column:1/-1"><span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;">Apoderado 1</span></div>
+      <div class="modal-field"><label>Nombre</label><input id="ep-ap1n" type="text" value="${pac.apoderado1_nombre||''}"></div>
+      <div class="modal-field"><label>Teléfono</label><input id="ep-ap1f" type="text" value="${pac.apoderado1_fono||''}"></div>
+      <div class="modal-field"><label>Email</label><input id="ep-ap1e" type="email" value="${pac.apoderado1_email||''}"></div>
+      <div class="modal-field" style="grid-column:1/-1"><span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;">Apoderado 2</span></div>
+      <div class="modal-field"><label>Nombre</label><input id="ep-ap2n" type="text" value="${pac.apoderado2_nombre||''}"></div>
+      <div class="modal-field"><label>Teléfono</label><input id="ep-ap2f" type="text" value="${pac.apoderado2_fono||''}"></div>
+      <div class="modal-field"><label>Email</label><input id="ep-ap2e" type="email" value="${pac.apoderado2_email||''}"></div>
+      <div class="modal-field" style="grid-column:1/-1"><span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;">Información adicional</span></div>
+      <div class="modal-field"><label>Referencias</label><input id="ep-ref" type="text" value="${pac.referencias||''}"></div>
+      <div class="modal-field" style="grid-column:1/-1"><label>Comentarios</label><textarea id="ep-obs">${pac.comentarios||''}</textarea></div>
+      <div class="modal-field" style="grid-column:1/-1"><label>Alerta médica</label><input id="ep-alerta" type="text" value="${pac.alerta_medica||''}" placeholder="Ej: Alérgico a penicilina — VIH(+)"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarEditarPaciente()">Guardar cambios</button>
+    </div>`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+async function guardarEditarPaciente() {
+  const updates = {
+    nombre:             document.getElementById('ep-nombre').value.trim(),
+    convenio:           document.getElementById('ep-convenio').value,
+    fono:               document.getElementById('ep-fono').value.trim(),
+    email:              document.getElementById('ep-email').value.trim(),
+    apoderado1_nombre:  document.getElementById('ep-ap1n').value.trim() || null,
+    apoderado1_fono:    document.getElementById('ep-ap1f').value.trim() || null,
+    apoderado1_email:   document.getElementById('ep-ap1e').value.trim() || null,
+    apoderado2_nombre:  document.getElementById('ep-ap2n').value.trim() || null,
+    apoderado2_fono:    document.getElementById('ep-ap2f').value.trim() || null,
+    apoderado2_email:   document.getElementById('ep-ap2e').value.trim() || null,
+    referencias:        document.getElementById('ep-ref').value.trim() || null,
+    comentarios:        document.getElementById('ep-obs').value.trim() || null,
+    alerta_medica:      document.getElementById('ep-alerta').value.trim() || null,
+  };
+  const { error } = await sb.from('pacientes').update(updates).eq('rut', currentPacienteRut);
+  if(error) { showToast('Error al guardar'); return; }
+  await cargarPacientes();
+  closeModal();
+  openFicha(currentPacienteRut);
+  showToast('Datos del paciente actualizados');
+}
+
 function showFichaTab(id, el) {
   document.querySelectorAll('.ficha-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
