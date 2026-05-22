@@ -1424,11 +1424,42 @@ function renderSearch(q) {
   }).join('') || '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px;">No se encontraron pacientes</div>';
 }
 
+const PREGUNTAS_ANAMNESIS = [
+  '¿Presenta hipertensión?',
+  '¿Presenta diabetes?',
+  '¿Usted fuma?',
+  '¿Problemas de coagulación?',
+  '¿Toma anticoagulantes?',
+  '¿Alergia a algún medicamento?',
+  '¿Alergia al látex?',
+  '¿Alergia a la Clorhexidina?',
+  '¿Presenta cardiopatías?',
+  '¿Presenta epilepsia?',
+  '¿Problemas de tiroides?',
+  '¿Inmunosupresión?',
+  '¿Enfermedad renal?',
+  '¿Problemas hepáticos?',
+  '¿Otra condición médica relevante?',
+];
+
 function abrirNuevoPaciente() {
+  renderPasoUno();
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function renderPasoUno() {
   document.getElementById('modal-content').innerHTML = `
-    <h3>Nuevo paciente</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <h3 style="margin:0;">Nuevo paciente</h3>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--dark);color:white;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">1</div>
+        <div style="width:32px;height:2px;background:var(--border);"></div>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--muted);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">2</div>
+        <span style="font-size:11px;color:var(--muted);margin-left:6px;">Datos · Anamnesis</span>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
-      <div class="modal-field" style="grid-column:1/-1"><label>— Datos personales —</label></div>
+      <div class="modal-field" style="grid-column:1/-1;margin-bottom:4px;"><span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;">Datos personales</span></div>
       <div class="modal-field"><label>Nombres *</label><input id="np2-nombres" type="text" required></div>
       <div class="modal-field"><label>Apellidos *</label><input id="np2-apellidos" type="text" required></div>
       <div class="modal-field"><label>RUT *</label><input id="np2-rut" type="text" placeholder="12.345.678-9" required></div>
@@ -1439,79 +1470,137 @@ function abrirNuevoPaciente() {
       </div>
       <div class="modal-field"><label>Teléfono</label><input id="np2-fono" type="text"></div>
       <div class="modal-field"><label>Email</label><input id="np2-email" type="email"></div>
-      <div class="modal-field" style="grid-column:1/-1"><label>— Apoderado 1 (opcional) —</label></div>
-      <div class="modal-field"><label>Nombre apoderado 1</label><input id="np2-ap1nombre" type="text"></div>
+      <div class="modal-field" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px;"><span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;">Apoderado 1 (opcional)</span></div>
+      <div class="modal-field"><label>Nombre</label><input id="np2-ap1nombre" type="text"></div>
+      <div class="modal-field"><label>Relación</label><input id="np2-ap1rel" type="text" placeholder="mamá, papá, tutor..."></div>
       <div class="modal-field"><label>Teléfono</label><input id="np2-ap1fono" type="text"></div>
       <div class="modal-field"><label>Email</label><input id="np2-ap1email" type="email"></div>
-      <div class="modal-field"><label>Relación</label><input id="np2-ap1rel" type="text" placeholder="Ej: mamá, papá, tutor"></div>
-      <div class="modal-field" style="grid-column:1/-1"><label>— Apoderado 2 (opcional) —</label></div>
-      <div class="modal-field"><label>Nombre apoderado 2</label><input id="np2-ap2nombre" type="text"></div>
+      <div class="modal-field" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px;"><span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;">Apoderado 2 (opcional)</span></div>
+      <div class="modal-field"><label>Nombre</label><input id="np2-ap2nombre" type="text"></div>
+      <div class="modal-field"><label>Relación</label><input id="np2-ap2rel" type="text" placeholder="mamá, papá, tutor..."></div>
       <div class="modal-field"><label>Teléfono</label><input id="np2-ap2fono" type="text"></div>
       <div class="modal-field"><label>Email</label><input id="np2-ap2email" type="email"></div>
-      <div class="modal-field"><label>Relación</label><input id="np2-ap2rel" type="text" placeholder="Ej: mamá, papá, tutor"></div>
-      <div class="modal-field" style="grid-column:1/-1"><label>— Información adicional —</label></div>
+      <div class="modal-field" style="grid-column:1/-1;margin-top:8px;margin-bottom:4px;"><span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;">Información adicional</span></div>
       <div class="modal-field"><label>Referencias</label><input id="np2-ref" type="text" placeholder="Cómo llegó a la clínica"></div>
-      <div class="modal-field" style="grid-column:1/-1"><label>Comentarios</label><textarea id="np2-obs" placeholder="Notas relevantes del paciente..."></textarea></div>
+      <div class="modal-field" style="grid-column:1/-1"><label>Comentarios</label><textarea id="np2-obs" placeholder="Notas relevantes..."></textarea></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" onclick="guardarNuevoPacienteCompleto()">Registrar paciente</button>
+      <button class="btn-primary" onclick="irPasoDos()">Siguiente → Anamnesis</button>
     </div>`;
-  document.getElementById('modal-backdrop').classList.add('open');
 }
 
-async function guardarNuevoPacienteCompleto() {
+// Datos temporales entre pasos
+let _npDatos = {};
+
+function irPasoDos() {
   const nombres = document.getElementById('np2-nombres').value.trim();
   const apellidos = document.getElementById('np2-apellidos').value.trim();
   const rut = document.getElementById('np2-rut').value.trim();
   const ficha = document.getElementById('np2-ficha').value.trim();
   if(!nombres || !apellidos || !rut || !ficha) { showToast('Completa los campos obligatorios (*)'); return; }
-
-  const nombre = nombres + ' ' + apellidos;
   const fnac = document.getElementById('np2-fnac').value;
   let edad = null;
-  if(fnac) { const d = new Date(fnac); edad = Math.floor((Date.now()-d)/(365.25*24*3600*1000)); }
-
-  // Construir comentarios con apoderados
-  const ap1n = document.getElementById('np2-ap1nombre').value.trim();
-  const ap1f = document.getElementById('np2-ap1fono').value.trim();
-  const ap1e = document.getElementById('np2-ap1email').value.trim();
-  const ap1r = document.getElementById('np2-ap1rel').value.trim();
-  const ap2n = document.getElementById('np2-ap2nombre').value.trim();
-  const ap2f = document.getElementById('np2-ap2fono').value.trim();
-  const ap2e = document.getElementById('np2-ap2email').value.trim();
-  const ap2r = document.getElementById('np2-ap2rel').value.trim();
-  const ref = document.getElementById('np2-ref').value.trim();
-  const obs = document.getElementById('np2-obs').value.trim();
-
-  const obj = {
-    nombre,
-    rut,
-    ficha,
-    edad,
+  if(fnac) edad = Math.floor((Date.now()-new Date(fnac))/(365.25*24*3600*1000));
+  _npDatos = {
+    nombre: nombres + ' ' + apellidos,
+    rut, ficha, edad,
     convenio: document.getElementById('np2-convenio').value,
     fono: document.getElementById('np2-fono').value.trim(),
     email: document.getElementById('np2-email').value.trim(),
-    // Guardamos apoderados y extras en campos adicionales
-    apoderado1_nombre: ap1n ? `${ap1n}${ap1r?' ('+ap1r+')':''}` : null,
-    apoderado1_fono: ap1f || null,
-    apoderado1_email: ap1e || null,
-    apoderado2_nombre: ap2n ? `${ap2n}${ap2r?' ('+ap2r+')':''}` : null,
-    apoderado2_fono: ap2f || null,
-    apoderado2_email: ap2e || null,
-    referencias: ref || null,
-    comentarios: obs || null,
+    apoderado1_nombre: (() => { const n=document.getElementById('np2-ap1nombre').value.trim(); const r=document.getElementById('np2-ap1rel').value.trim(); return n?(n+(r?' ('+r+')':'')):null; })(),
+    apoderado1_fono: document.getElementById('np2-ap1fono').value.trim()||null,
+    apoderado1_email: document.getElementById('np2-ap1email').value.trim()||null,
+    apoderado2_nombre: (() => { const n=document.getElementById('np2-ap2nombre').value.trim(); const r=document.getElementById('np2-ap2rel').value.trim(); return n?(n+(r?' ('+r+')':'')):null; })(),
+    apoderado2_fono: document.getElementById('np2-ap2fono').value.trim()||null,
+    apoderado2_email: document.getElementById('np2-ap2email').value.trim()||null,
+    referencias: document.getElementById('np2-ref').value.trim()||null,
+    comentarios: document.getElementById('np2-obs').value.trim()||null,
   };
+  renderPasoDos();
+}
 
-  const { error } = await sb.from('pacientes').insert(obj);
+function renderPasoDos() {
+  const filas = PREGUNTAS_ANAMNESIS.map((q, i) => `
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:10px 12px;font-size:13px;color:var(--dark);">${q}</td>
+      <td style="padding:10px 12px;white-space:nowrap;">
+        <div style="display:flex;gap:12px;">
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;">
+            <input type="radio" name="an-${i}" value="Si"> Sí
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;">
+            <input type="radio" name="an-${i}" value="No" checked> No
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;">
+            <input type="radio" name="an-${i}" value="Otro"> Otro
+          </label>
+        </div>
+      </td>
+      <td style="padding:6px 12px;">
+        <input type="text" id="an-obs-${i}" placeholder="Observación..." style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;color:var(--dark);">
+      </td>
+    </tr>`).join('');
+
+  document.getElementById('modal-content').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3 style="margin:0;">Encuesta de salud — ${_npDatos.nombre}</h3>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--muted);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">1</div>
+        <div style="width:32px;height:2px;background:var(--dark);"></div>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--dark);color:white;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">2</div>
+        <span style="font-size:11px;color:var(--muted);margin-left:6px;">Datos · Anamnesis</span>
+      </div>
+    </div>
+    <div style="overflow-y:auto;max-height:400px;border:1px solid var(--border);border-radius:var(--radius-sm);">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead style="position:sticky;top:0;z-index:1;">
+          <tr style="background:var(--cream);">
+            <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;text-align:left;border-bottom:2px solid var(--border);width:50%">Pregunta</th>
+            <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;text-align:left;border-bottom:2px solid var(--border);width:20%">Respuesta</th>
+            <th style="padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;text-align:left;border-bottom:2px solid var(--border);">Observación</th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-cancel" onclick="renderPasoUno()">← Volver</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-cancel" onclick="guardarNuevoPacienteCompleto(false)">Omitir anamnesis</button>
+        <button class="btn-primary" onclick="guardarNuevoPacienteCompleto(true)">Registrar paciente ✓</button>
+      </div>
+    </div>`;
+}
+
+async function guardarNuevoPacienteCompleto(conAnamnesis) {
+  const { error } = await sb.from('pacientes').insert(_npDatos);
   if(error) {
     if(error.code === '23505') showToast('Ya existe un paciente con ese RUT o N° ficha');
     else { showToast('Error al registrar paciente'); console.error(error); }
     return;
   }
+
+  // Guardar anamnesis si se completó
+  if(conAnamnesis) {
+    const alertasRespuestas = ['Si', 'Otro'];
+    const registros = PREGUNTAS_ANAMNESIS.map((q, i) => {
+      const resp = document.querySelector(`input[name="an-${i}"]:checked`)?.value || 'No';
+      const obs = document.getElementById(`an-obs-${i}`)?.value.trim() || '';
+      return {
+        paciente_rut: _npDatos.rut,
+        pregunta: q,
+        respuesta: resp,
+        alerta: alertasRespuestas.includes(resp),
+        observacion: obs || null,
+      };
+    });
+    await sb.from('anamnesis').insert(registros);
+  }
+
   await cargarPacientes();
   closeModal();
-  showToast('Paciente registrado correctamente');
+  showToast('Paciente registrado correctamente' + (conAnamnesis ? ' con anamnesis' : ''));
 }
 
 async function guardarNuevoPaciente(form) {
