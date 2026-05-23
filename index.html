@@ -2932,7 +2932,19 @@ async function guardarNuevoPresupuesto() {
     archivo_nombre: archivoNombre,
   };
   const { error } = await sb.from('presupuestos').insert(obj);
-  if(error) { showToast('Error al guardar presupuesto'); if(btn){btn.textContent='Crear presupuesto';btn.disabled=false;} return; }
+  if(error) {
+    console.error('Presupuesto error:', error);
+    // Si falla por columna comentarios no existe, intentar sin ella
+    if(error.message && error.message.includes('comentarios')) {
+      delete obj.comentarios;
+      const { error: error2 } = await sb.from('presupuestos').insert(obj);
+      if(error2) { showToast('Error al guardar: ' + error2.message); if(btn){btn.textContent='Crear presupuesto';btn.disabled=false;} return; }
+    } else {
+      showToast('Error: ' + (error.message || 'Error desconocido'));
+      if(btn){btn.textContent='Crear presupuesto';btn.disabled=false;}
+      return;
+    }
+  }
   await cargarPresupuestos();
   closeModal();
   showToast('Presupuesto creado correctamente');
