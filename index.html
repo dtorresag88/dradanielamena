@@ -1361,6 +1361,7 @@ function showPage(id, el) {
   sidebar.className = 'sidebar' + (['diaria','semanal'].includes(id) ? ' visible' : '');
   if(id === 'diaria') actualizarSidebarDiaria();
   if(id === 'semanal') actualizarSidebarSemanal();
+  if(id === 'indicadores') renderIndicadores();
   closeDetail();
 }
 
@@ -2304,27 +2305,52 @@ async function guardarNuevaPrestacion(form) {
 // ============================================================
 // INDICADORES (calculados desde datos reales)
 // ============================================================
-function renderIndicadores() {
-  const totalCitas = citas.filter(c=>!c.bloqueado).length || 127;
-  const atendidas = citas.filter(c=>c.estado==='Atendido').length;
-  const inasistencias = citas.filter(c=>c.estado==='No asistió').length;
-  const totalValidas = atendidas + inasistencias || 100;
-  const tasaAsistencia = totalValidas ? Math.round(atendidas/totalValidas*100) : 94;
-  const tasaAnulacion = totalValidas ? Math.round(inasistencias/totalValidas*100) : 6;
-  const totalIngresos = cajaIngresos.reduce((a,b)=>a+(b.monto||0),0) || 3840000;
+async function renderIndicadores() {
+  // Mes actual
+  const hoy = new Date();
+  const mesActual = hoy.getMonth() + 1;
+  const anioActual = hoy.getFullYear();
+  const mesLabel = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][hoy.getMonth()];
+  const desde = `${anioActual}-${String(mesActual).padStart(2,'0')}-01`;
+  const hasta = `${anioActual}-${String(mesActual).padStart(2,'0')}-31`;
+
+  // 1. Citas del mes desde Supabase
+  const { data: citasMes } = await sb.from('citas')
+    .select('estado,bloqueado')
+    .gte('fecha', desde).lte('fecha', hasta);
+  const citasValidas = (citasMes||[]).filter(c => !c.bloqueado);
+  const totalCitas = citasValidas.length;
+  const atendidas = citasValidas.filter(c => c.estado === 'Atendido').length;
+  const inasistencias = citasValidas.filter(c => c.estado === 'No asistió').length;
+  const totalValidas = atendidas + inasistencias;
+  const tasaAsistencia = totalValidas ? Math.round(atendidas / totalValidas * 100) : 0;
+  const tasaAnulacion = totalValidas ? Math.round(inasistencias / totalValidas * 100) : 0;
+
+  // 2. Producción del mes (caja ingresos)
+  const { data: ingresosMes } = await sb.from('caja_ingresos')
+    .select('monto').gte('fecha', desde).lte('fecha', hasta);
+  const totalProduccion = (ingresosMes||[]).reduce((a,b) => a+(b.monto||0), 0);
+
+  // 3. Pacientes nuevos del mes
+  const { data: pacNuevos } = await sb.from('pacientes')
+    .select('id').gte('created_at', desde + 'T00:00:00').lte('created_at', hasta + 'T23:59:59');
+  const nuevosPacientes = (pacNuevos||[]).length;
+
   const resumen = [
-    {label:'CITAS ESTE MES', val: totalCitas},
-    {label:'TASA ASISTENCIA', val: tasaAsistencia+'%'},
-    {label:'PRODUCCIÓN ABRIL', val: '$'+totalIngresos.toLocaleString('es-CL')},
-    {label:'NUEVOS PACIENTES', val: pacientes.length || 8},
-    {label:'TASA ANULACIÓN', val: tasaAnulacion+'%'},
-    {label:'DURACIÓN PROM. CITA', val: '42 min'},
+    {label:`CITAS ${mesLabel.toUpperCase()}`, val: totalCitas, sub: `${atendidas} atendidas`},
+    {label:'TASA ASISTENCIA', val: tasaAsistencia+'%', sub: `${atendidas} de ${totalValidas} citas`},
+    {label:`PRODUCCIÓN ${mesLabel.toUpperCase()}`, val: totalProduccion ? '$'+totalProduccion.toLocaleString('es-CL') : '$0', sub: 'Ingresos del mes'},
+    {label:'NUEVOS PACIENTES', val: nuevosPacientes, sub: 'Registrados este mes'},
+    {label:'TASA ANULACIÓN', val: tasaAnulacion+'%', sub: `${inasistencias} inasistencias`},
+    {label:'TOTAL PACIENTES', val: pacientes.length, sub: 'En el sistema'},
   ];
+
   const el = document.getElementById('kpi-resumen');
   if(el) el.innerHTML = resumen.map(k => `
     <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 24px;text-align:center;">
       <div style="font-family:'DM Serif Display',serif;font-size:2rem;color:var(--dark);font-weight:400;">${k.val}</div>
       <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.1em;margin-top:8px;">${k.label}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">${k.sub}</div>
     </div>`).join('');
 }
 function kpiCard(k) {
