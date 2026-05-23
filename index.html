@@ -218,6 +218,27 @@ body {
 .convenio-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 500; }
 .convenio-item:last-child { border-bottom: none; }
 
+
+/* PRESUPUESTO DETALLADO */
+.presup-prest-table { width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px; }
+.presup-prest-table th { background:var(--cream);padding:7px 10px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--border);text-align:left; }
+.presup-prest-table td { padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.presup-prest-table tr:last-child td { border-bottom:none; }
+.presup-prest-table input[type=text], .presup-prest-table input[type=number] { width:100%;padding:4px 7px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:13px; }
+.prest-add-btn { font-size:12px;color:var(--accent);background:none;border:1px dashed var(--accent);border-radius:var(--radius-sm);padding:5px 14px;cursor:pointer;font-family:inherit; }
+.prest-del-btn { color:var(--red);background:none;border:none;font-size:16px;cursor:pointer;padding:0 6px; }
+.presup-resumen { background:var(--cream);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;margin-top:8px; }
+.presup-resumen-row { display:flex;justify-content:space-between;padding:3px 0; }
+.presup-resumen-total { font-weight:700;font-size:14px;border-top:1px solid var(--border);margin-top:6px;padding-top:6px; }
+
+/* PDF PRINT */
+@media print {
+  body * { visibility: hidden !important; }
+  #presup-pdf-container, #presup-pdf-container * { visibility: visible !important; }
+  #presup-pdf-container { position:fixed;left:0;top:0;width:100%;background:white; }
+  .no-print { display:none !important; }
+}
+
 /* SOBRE CUPO */
 .tag-sobrecupo { display:inline-block; background:#FEF3C7; color:#92400E; font-size:10px; font-weight:600; padding:2px 7px; border-radius:999px; margin-left:8px; vertical-align:middle; border:1px solid #FDE68A; }
 .slot-block.sobrecupo-slot { background: #FFFBEB; border-left: 3px solid #F59E0B; }
@@ -2615,26 +2636,8 @@ const modalTemplates = {
       <button class="btn-primary" onclick="guardarForm('nuevo-insumo')">Agregar</button>
     </div>`,
 
-  'nuevo-presup': () => `
-    <h3>Nuevo presupuesto</h3>
-    <div class="modal-field"><label>Convenio</label>
-      <select id="np-convenio"><option>Sin convenio</option><option>Fonasa</option><option>SmileUp</option><option>Cruz Blanca</option></select>
-    </div>
-    <div class="modal-field"><label>Tipo de tratamiento</label>
-      <select id="np-tipo"><option>Ortodoncia</option><option>Operatoria</option><option>Periodoncia</option><option>Cirugía</option><option>Otro</option></select>
-    </div>
-    <div class="modal-field"><label>Descripción</label><textarea id="np-desc" placeholder="Detalle de prestaciones..."></textarea></div>
-    <div class="modal-field"><label>Monto total</label><input id="np-monto" type="text" placeholder="$0"></div>
-    <div class="modal-field"><label>N° cuotas</label><input id="np-cuotas" type="number" placeholder="1" min="1" value="1"></div>
-    <div class="modal-field">
-      <label>Documento anexo <span style="font-size:11px;color:var(--muted);font-weight:400;">(PDF, Word, imagen — opcional)</span></label>
-      <input id="np-archivo" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="padding:8px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);width:100%;font-size:13px;cursor:pointer;">
-      <div id="np-archivo-preview" style="margin-top:6px;font-size:12px;color:var(--muted);"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" id="np-btn-crear" onclick="guardarNuevoPresupuesto()">Crear presupuesto</button>
-    </div>`,
+  'nuevo-presup': () => { abrirNuevoPresupuesto(); return ''; },
+  '_np_placeholder': () => `placeholder`,
 
   'ver-presup': () => `
     <h3>Presupuesto N° 87483 — Ortodoncia</h3>
@@ -2757,6 +2760,108 @@ function closeModalOnBg(e) { if(e.target===document.getElementById('modal-backdr
 // ============================================================
 // CALENDARIO TOGGLE
 // ── PRESUPUESTOS ────────────────────────────────────────────────────────────
+let _presupPrestaciones = [{prestacion:'',pieza:'',subtotal:'',descuento:'0',total:''}];
+
+function abrirNuevoPresupuesto() {
+  _presupPrestaciones = [{prestacion:'',pieza:'',subtotal:'',descuento:'0',total:''}];
+  const pac = pacientes.find(p => p.rut === currentPacienteRut);
+  document.getElementById('modal-content').innerHTML = `
+    <h3>Nuevo presupuesto</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+      <div class="modal-field"><label>Convenio</label>
+        <select id="np-convenio"><option>Sin convenio</option><option>Fonasa</option><option>SmileUp</option><option>Cruz Blanca</option></select>
+      </div>
+      <div class="modal-field"><label>Tipo de tratamiento</label>
+        <select id="np-tipo"><option>Ortodoncia</option><option>Operatoria</option><option>Periodoncia</option><option>Cirugía</option><option>Otro</option></select>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin:8px 0 10px;">Prestaciones</div>
+    <div id="np-prest-wrap"></div>
+    <button class="prest-add-btn no-print" onclick="agregarPrestacion()" style="margin-bottom:14px;">+ Agregar prestación</button>
+    <div id="np-resumen" class="presup-resumen"></div>
+    <div class="modal-field" style="margin-top:12px;"><label>Comentarios</label><textarea id="np-comentarios" placeholder="Observaciones o condiciones del presupuesto..." rows="2"></textarea></div>
+    <div class="modal-field">
+      <label>Documento anexo <span style="font-size:11px;color:var(--muted);font-weight:400;">(PDF, Word, imagen — opcional)</span></label>
+      <input id="np-archivo" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="padding:8px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);width:100%;font-size:13px;cursor:pointer;">
+      <div id="np-archivo-preview" style="margin-top:6px;font-size:12px;color:var(--muted);"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" id="np-btn-crear" onclick="guardarNuevoPresupuesto()">Crear presupuesto</button>
+    </div>`;
+  renderPrestacionesForm();
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function renderPrestacionesForm() {
+  const wrap = document.getElementById('np-prest-wrap');
+  if(!wrap) return;
+  wrap.innerHTML = `
+    <table class="presup-prest-table">
+      <thead><tr>
+        <th style="width:35%">Prestación</th>
+        <th style="width:12%">Pieza(s)</th>
+        <th style="width:15%">Subtotal</th>
+        <th style="width:12%">Desc. %</th>
+        <th style="width:15%">Total</th>
+        <th style="width:5%"></th>
+      </tr></thead>
+      <tbody>${_presupPrestaciones.map((p,i) => `
+        <tr>
+          <td><input type="text" value="${p.prestacion}" oninput="_presupPrestaciones[${i}].prestacion=this.value"></td>
+          <td><input type="text" value="${p.pieza}" oninput="_presupPrestaciones[${i}].pieza=this.value" style="width:100%"></td>
+          <td><input type="number" value="${p.subtotal}" placeholder="0" oninput="_presupPrestaciones[${i}].subtotal=this.value;calcTotalPrest(${i})" style="width:100%"></td>
+          <td><input type="number" value="${p.descuento}" placeholder="0" min="0" max="100" oninput="_presupPrestaciones[${i}].descuento=this.value;calcTotalPrest(${i})" style="width:100%"></td>
+          <td id="np-total-${i}" style="font-weight:600;color:var(--dark);">$${calcPrestTotal(p)}</td>
+          <td><button class="prest-del-btn no-print" onclick="eliminarPrestacion(${i})">×</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  actualizarResumen();
+}
+
+function calcPrestTotal(p) {
+  const sub = parseFloat(p.subtotal)||0;
+  const desc = parseFloat(p.descuento)||0;
+  return Math.round(sub * (1 - desc/100)).toLocaleString('es-CL');
+}
+
+function calcTotalPrest(i) {
+  const p = _presupPrestaciones[i];
+  const el = document.getElementById('np-total-'+i);
+  if(el) el.textContent = '$' + calcPrestTotal(p);
+  actualizarResumen();
+}
+
+function actualizarResumen() {
+  let totalBruto = 0, totalDesc = 0, totalNeto = 0;
+  _presupPrestaciones.forEach(p => {
+    const sub = parseFloat(p.subtotal)||0;
+    const desc = parseFloat(p.descuento)||0;
+    const neto = Math.round(sub * (1-desc/100));
+    totalBruto += sub;
+    totalDesc += (sub - neto);
+    totalNeto += neto;
+  });
+  const el = document.getElementById('np-resumen');
+  if(el) el.innerHTML = `
+    <div class="presup-resumen-row"><span>Total bruto</span><span>$${totalBruto.toLocaleString('es-CL')}</span></div>
+    <div class="presup-resumen-row"><span>Descuento</span><span style="color:var(--red)">-$${totalDesc.toLocaleString('es-CL')}</span></div>
+    <div class="presup-resumen-row presup-resumen-total"><span>TOTAL</span><span>$${totalNeto.toLocaleString('es-CL')}</span></div>`;
+}
+
+function agregarPrestacion() {
+  _presupPrestaciones.push({prestacion:'',pieza:'',subtotal:'',descuento:'0',total:''});
+  renderPrestacionesForm();
+}
+
+function eliminarPrestacion(i) {
+  if(_presupPrestaciones.length === 1) return;
+  _presupPrestaciones.splice(i,1);
+  renderPrestacionesForm();
+}
+
+// ── PRESUPUESTOS ────────────────────────────────────────────────────────────
 let presupuestosData = [];
 
 async function cargarPresupuestos() {
@@ -2792,38 +2897,40 @@ function renderPresupuestos() {
 
 async function guardarNuevoPresupuesto() {
   const btn = document.getElementById('np-btn-crear');
-  btn.textContent = 'Guardando...'; btn.disabled = true;
+  if(btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
   const archivoInput = document.getElementById('np-archivo');
   const archivo = archivoInput?.files?.[0];
   let archivoUrl = null, archivoNombre = null;
-
-  // Subir archivo si existe
   if(archivo) {
     const ext = archivo.name.split('.').pop();
     const path = `${currentPacienteRut}/${Date.now()}.${ext}`;
-    const { data: upData, error: upErr } = await sb.storage.from('presupuestos').upload(path, archivo);
-    if(upErr) { showToast('Error al subir archivo'); btn.textContent='Crear presupuesto'; btn.disabled=false; return; }
+    const { error: upErr } = await sb.storage.from('presupuestos').upload(path, archivo);
+    if(upErr) { showToast('Error al subir archivo'); if(btn){btn.textContent='Crear presupuesto';btn.disabled=false;} return; }
     const { data: urlData } = sb.storage.from('presupuestos').getPublicUrl(path);
     archivoUrl = urlData.publicUrl;
     archivoNombre = archivo.name;
   }
-
-  // Generar folio
-  const folio = String(Math.floor(Math.random()*90000)+10000);
+  const totalNeto = _presupPrestaciones.reduce((a,p)=>{
+    const sub=parseFloat(p.subtotal)||0; const desc=parseFloat(p.descuento)||0;
+    return a+Math.round(sub*(1-desc/100));
+  },0);
+  const foliosExist = presupuestosData.map(p=>parseInt(p.folio)||0);
+  const folio = String(foliosExist.length ? Math.max(...foliosExist)+1 : 1001);
   const obj = {
     paciente_rut: currentPacienteRut,
     folio,
-    convenio: document.getElementById('np-convenio').value,
-    tipo: document.getElementById('np-tipo').value,
-    descripcion: document.getElementById('np-desc').value.trim(),
-    monto: parseInt((document.getElementById('np-monto').value||'0').replace(/\D/g,''))||0,
-    cuotas: parseInt(document.getElementById('np-cuotas').value)||1,
+    convenio: document.getElementById('np-convenio')?.value || '',
+    tipo: document.getElementById('np-tipo')?.value || '',
+    descripcion: JSON.stringify(_presupPrestaciones),
+    comentarios: document.getElementById('np-comentarios')?.value.trim() || '',
+    monto: totalNeto,
+    cuotas: 1,
     estado: 'Sin iniciar',
     archivo_url: archivoUrl,
     archivo_nombre: archivoNombre,
   };
   const { error } = await sb.from('presupuestos').insert(obj);
-  if(error) { showToast('Error al guardar presupuesto'); btn.textContent='Crear presupuesto'; btn.disabled=false; return; }
+  if(error) { showToast('Error al guardar presupuesto'); if(btn){btn.textContent='Crear presupuesto';btn.disabled=false;} return; }
   await cargarPresupuestos();
   closeModal();
   showToast('Presupuesto creado correctamente');
@@ -2839,21 +2946,71 @@ async function verPresupuesto(id) {
   const p = presupuestosData.find(x => x.id === id);
   if(!p) return;
   const fechaFmt = p.fecha ? p.fecha.split('-').reverse().join('/') : '';
+  const pac = pacientes.find(x => x.rut === currentPacienteRut);
+
+  // Parsear prestaciones
+  let prest = [];
+  try { prest = JSON.parse(p.descripcion||'[]'); } catch(e) { prest = []; }
+
+  // Renderizar tabla de prestaciones con checkboxes
+  const prestRows = prest.map((pr, i) => {
+    const sub = parseFloat(pr.subtotal)||0;
+    const desc = parseFloat(pr.descuento)||0;
+    const total = Math.round(sub*(1-desc/100));
+    const done = pr.completado || false;
+    return `<tr style="${done?'opacity:.5;text-decoration:line-through':''}">
+      <td style="padding:7px 10px;">
+        <label style="cursor:pointer;display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" ${done?'checked':''} onchange="togglePrestacionCompletada(${id},${i},this.checked)" style="accent-color:var(--green);width:15px;height:15px;">
+          <span style="font-size:11px;color:${done?'var(--green)':'var(--muted)'};">${done?'[Realizado]':'[Por realizar]'}</span>
+        </label>
+      </td>
+      <td style="padding:7px 10px;">${pr.prestacion||''}</td>
+      <td style="padding:7px 10px;">${pr.pieza||'—'}</td>
+      <td style="padding:7px 10px;text-align:right;">$${sub.toLocaleString('es-CL')}</td>
+      <td style="padding:7px 10px;text-align:center;">${desc}%</td>
+      <td style="padding:7px 10px;text-align:right;font-weight:600;">$${total.toLocaleString('es-CL')}</td>
+    </tr>`;
+  }).join('');
+
+  const totalBruto = prest.reduce((a,pr)=>a+(parseFloat(pr.subtotal)||0),0);
+  const totalNeto = prest.reduce((a,pr)=>{ const s=parseFloat(pr.subtotal)||0; const d=parseFloat(pr.descuento)||0; return a+Math.round(s*(1-d/100)); },0);
+  const totalDesc = totalBruto - totalNeto;
+
   const archivoSection = p.archivo_url
-    ? `<div style="margin-top:16px;padding:12px;background:var(--blue-light);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;">
+    ? `<div style="margin-top:12px;padding:10px 14px;background:var(--blue-light);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;">
         <span style="font-size:13px;">📎 ${p.archivo_nombre||'Archivo adjunto'}</span>
         <a href="${p.archivo_url}" target="_blank" class="btn-xs" style="color:var(--blue);border-color:var(--blue);text-decoration:none;">Descargar</a>
       </div>` : '';
+
   document.getElementById('modal-content').innerHTML = `
-    <h3>Presupuesto N° ${p.folio} — ${p.tipo}</h3>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Creado: ${fechaFmt} &nbsp;|&nbsp; Estado: ${p.estado} &nbsp;|&nbsp; Convenio: ${p.convenio}</div>
-    ${p.descripcion ? `<div style="font-size:13px;margin-bottom:12px;padding:12px;background:var(--cream);border-radius:var(--radius-sm);">${p.descripcion}</div>` : ''}
-    <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;padding:12px 0;border-top:1px solid var(--border);">
-      <span>Monto total</span><span>$${(p.monto||0).toLocaleString('es-CL')}</span>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+      <div>
+        <h3 style="margin:0;">Presupuesto N° ${p.folio} — ${p.tipo}</h3>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Creado: ${fechaFmt} &nbsp;|&nbsp; Estado: <strong>${p.estado}</strong> &nbsp;|&nbsp; Convenio: ${p.convenio}</div>
+        <div style="font-size:12px;color:var(--muted);">Paciente: ${pac?.nombre||''}</div>
+      </div>
+      <button class="btn-sm no-print" onclick="generarPDFPresupuesto(${id})" style="background:var(--dark);color:white;border:none;">🖨 Generar PDF</button>
     </div>
-    <div style="font-size:13px;color:var(--muted);">Cuotas: ${p.cuotas||1}</div>
+    <table class="presup-prest-table">
+      <thead><tr>
+        <th style="width:14%">Estado</th>
+        <th style="width:30%">Prestación</th>
+        <th style="width:12%">Pieza(s)</th>
+        <th style="width:14%;text-align:right">Subtotal</th>
+        <th style="width:10%;text-align:center">Desc.</th>
+        <th style="width:14%;text-align:right">Total</th>
+      </tr></thead>
+      <tbody>${prestRows}</tbody>
+    </table>
+    <div class="presup-resumen" style="margin-top:8px;max-width:280px;margin-left:auto;">
+      <div class="presup-resumen-row"><span>Total bruto</span><span>$${totalBruto.toLocaleString('es-CL')}</span></div>
+      <div class="presup-resumen-row"><span>Descuento</span><span style="color:var(--red)">-$${totalDesc.toLocaleString('es-CL')}</span></div>
+      <div class="presup-resumen-row presup-resumen-total"><span>TOTAL</span><span>$${totalNeto.toLocaleString('es-CL')}</span></div>
+    </div>
+    ${p.comentarios ? `<div style="margin-top:12px;font-size:13px;color:var(--muted);"><strong>Comentarios:</strong> ${p.comentarios}</div>` : ''}
     ${archivoSection}
-    <div class="modal-actions" style="justify-content:space-between;">
+    <div class="modal-actions no-print" style="justify-content:space-between;margin-top:16px;">
       <button class="btn-cancel" style="color:var(--red);border-color:var(--red);" onclick="cambiarEstadoPresup(${p.id},'Expirado');closeModal()">Marcar expirado</button>
       <div style="display:flex;gap:8px;">
         <button class="btn-cancel" onclick="closeModal()">Cerrar</button>
@@ -2861,6 +3018,103 @@ async function verPresupuesto(id) {
       </div>
     </div>`;
   document.getElementById('modal-backdrop').classList.add('open');
+}
+
+async function togglePrestacionCompletada(presupId, prestIdx, completado) {
+  const p = presupuestosData.find(x => x.id === presupId);
+  if(!p) return;
+  let prest = [];
+  try { prest = JSON.parse(p.descripcion||'[]'); } catch(e) {}
+  if(prest[prestIdx]) prest[prestIdx].completado = completado;
+  await sb.from('presupuestos').update({descripcion: JSON.stringify(prest)}).eq('id', presupId);
+  await cargarPresupuestos();
+  verPresupuesto(presupId); // re-render
+}
+
+function generarPDFPresupuesto(id) {
+  const p = presupuestosData.find(x => x.id === id);
+  const pac = pacientes.find(x => x.rut === currentPacienteRut);
+  if(!p || !pac) return;
+  let prest = [];
+  try { prest = JSON.parse(p.descripcion||'[]'); } catch(e) {}
+  const fechaFmt = p.fecha ? p.fecha.split('-').reverse().join('/') : new Date().toLocaleDateString('es-CL');
+  const totalBruto = prest.reduce((a,pr)=>a+(parseFloat(pr.subtotal)||0),0);
+  const totalNeto = prest.reduce((a,pr)=>{ const s=parseFloat(pr.subtotal)||0; const d=parseFloat(pr.descuento)||0; return a+Math.round(s*(1-d/100)); },0);
+  const totalDesc = totalBruto - totalNeto;
+
+  const prestRows = prest.map(pr => {
+    const sub = parseFloat(pr.subtotal)||0;
+    const desc = parseFloat(pr.descuento)||0;
+    const total = Math.round(sub*(1-desc/100));
+    const done = pr.completado || false;
+    return `<tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;">${done?'[Realizado]':'[Por realizar]'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;">${pr.prestacion||''}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:center;">${pr.pieza||'—'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:right;">$${sub.toLocaleString('es-CL')}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:center;">${desc}%</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:right;font-weight:600;">$${total.toLocaleString('es-CL')}</td>
+    </tr>`;
+  }).join('');
+
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Presupuesto N° ${p.folio}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #1a1a1a; margin: 0; padding: 40px; }
+    .header { text-align: center; margin-bottom: 28px; border-bottom: 2px solid #1a1a1a; padding-bottom: 16px; }
+    .header h1 { font-size: 18px; font-weight: 700; margin: 0 0 4px; letter-spacing: .05em; }
+    .header .sub { font-size: 12px; color: #555; margin: 2px 0; }
+    .meta { margin-bottom: 20px; }
+    .meta p { margin: 3px 0; font-size: 13px; }
+    .meta strong { display: inline-block; width: 120px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    thead tr { background: #f5f0e8; }
+    th { padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; border-bottom: 2px solid #1a1a1a; text-align: left; }
+    .resumen { float: right; width: 260px; border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px; margin-top: 8px; }
+    .resumen-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
+    .resumen-total { font-weight: 700; font-size: 15px; border-top: 1px solid #1a1a1a; margin-top: 6px; padding-top: 6px; display: flex; justify-content: space-between; }
+    .comentarios { clear: both; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e5e5; }
+    .firmas { margin-top: 60px; display: flex; gap: 80px; }
+    .firma-line { border-top: 1px solid #1a1a1a; padding-top: 6px; font-size: 12px; width: 200px; }
+    @page { margin: 20mm; }
+    @media print { body { padding: 0; } }
+  </style></head><body>
+  <div class="header">
+    <h1>DRA. DANIELA MENA SALIN</h1>
+    <div class="sub">ORTODONCIA Y ORTOPEDIA DMF</div>
+    <div class="sub">Apoquindo 7935, of. 817-B, Las Condes</div>
+    <div class="sub">Teléfono: +569 3329 3646 / Email: dra.danielamena@gmail.com</div>
+  </div>
+  <div class="meta">
+    <p><strong>Presupuesto N°:</strong> ${p.folio}</p>
+    <p><strong>Fecha emisión:</strong> ${fechaFmt}</p>
+    <p><strong>Dentista:</strong> Dra. Daniela Mena Salin — RUT 18.020.541-1</p>
+    <p><strong>Paciente:</strong> ${pac.nombre} — RUT ${pac.rut}</p>
+    <p><strong>Convenio:</strong> ${p.convenio||'Sin convenio'}</p>
+  </div>
+  <table>
+    <thead><tr>
+      <th>Estado</th><th>Prestación</th><th style="text-align:center">Pieza(s)</th>
+      <th style="text-align:right">Subtotal</th><th style="text-align:center">Descuento</th><th style="text-align:right">Total</th>
+    </tr></thead>
+    <tbody>${prestRows}</tbody>
+  </table>
+  <div class="resumen">
+    <div class="resumen-row"><span>Total Clínica + Laboratorio</span><span>$${totalBruto.toLocaleString('es-CL')}</span></div>
+    <div class="resumen-row"><span>Descuento</span><span>-$${totalDesc.toLocaleString('es-CL')}</span></div>
+    <div class="resumen-total"><span>TOTAL</span><span>$${totalNeto.toLocaleString('es-CL')}</span></div>
+  </div>
+  ${p.comentarios ? `<div class="comentarios"><strong>Comentarios:</strong><br>${p.comentarios}</div>` : ''}
+  <div style="clear:both;margin-top:80px;">
+    <div class="firmas">
+      <div class="firma-line">Dra. Daniela Mena Salin</div>
+      <div class="firma-line">Paciente o Representante</div>
+    </div>
+  </div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`);
+  win.document.close();
 }
 
 function editarNombreClinica() {
