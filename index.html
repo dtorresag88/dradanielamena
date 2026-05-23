@@ -3039,10 +3039,40 @@ async function togglePrestacionCompletada(presupId, prestIdx, completado) {
   if(!p) return;
   let prest = [];
   try { prest = JSON.parse(p.descripcion||'[]'); } catch(e) {}
-  if(prest[prestIdx]) prest[prestIdx].completado = completado;
+  if(!prest[prestIdx]) return;
+
+  const pr = prest[prestIdx];
+  const sub = parseFloat(pr.subtotal)||0;
+  const desc = parseFloat(pr.descuento)||0;
+  const total = Math.round(sub*(1-desc/100));
+  const pac = pacientes.find(x => x.rut === currentPacienteRut);
+
+  if(completado && !pr.completado) {
+    // Agregar a producción profesional
+    const prodObj = {
+      fecha: new Date().toISOString().split('T')[0],
+      paciente: pac?.nombre || '',
+      rut: currentPacienteRut,
+      folio: p.folio,
+      prestacion: pr.prestacion,
+      monto: total,
+    };
+    const { error } = await sb.from('produccion').insert(prodObj);
+    if(error) { showToast('Error al registrar en producción'); return; }
+    showToast('Prestación completada y registrada en producción');
+  } else if(!completado && pr.completado) {
+    // Eliminar de producción (por folio + prestacion)
+    await sb.from('produccion').delete()
+      .eq('folio', p.folio)
+      .eq('prestacion', pr.prestacion)
+      .eq('rut', currentPacienteRut);
+    showToast('Prestación desmarcada y eliminada de producción');
+  }
+
+  prest[prestIdx].completado = completado;
   await sb.from('presupuestos').update({descripcion: JSON.stringify(prest)}).eq('id', presupId);
-  await cargarPresupuestos();
-  verPresupuesto(presupId); // re-render
+  await Promise.all([cargarPresupuestos(), cargarProduccion()]);
+  verPresupuesto(presupId);
 }
 
 function generarPDFPresupuesto(id) {
