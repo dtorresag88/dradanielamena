@@ -1119,7 +1119,7 @@ body {
         <!-- PRESUPUESTOS -->
         <div class="ficha-section" id="ftab-presupuestos">
           <div class="presup-header">
-            <button class="btn-sm" onclick="showModal('nuevo-presup')">+ Crear nuevo presupuesto</button>
+            <button class="btn-sm" onclick="abrirNuevoPresupuesto()">+ Crear nuevo presupuesto</button>
             <div class="presup-filters">
               <button class="filter-tag active-blue">Sin iniciar</button>
               <button class="filter-tag active-green">En tratamiento</button>
@@ -2738,7 +2738,9 @@ function updateDocList(area) {
 function showModal(id) {
   const tpl = modalTemplates[id];
   if(!tpl) return;
-  document.getElementById('modal-content').innerHTML = tpl();
+  const html = tpl();
+  if(html === '') return; // function handles its own modal
+  document.getElementById('modal-content').innerHTML = html;
   document.getElementById('modal-backdrop').classList.add('open');
 }
 function closeModal() {
